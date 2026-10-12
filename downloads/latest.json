@@ -1,15 +1,15 @@
 {
-  "version": "0.3.2",
-  "notes": "Token-free public updates, new accent-aware logo, true black and charcoal dark mode, and phone-first project screens.",
+  "version": "0.3.3",
+  "notes": "Balanced phone layout with centered branding, overview, and stats; comfortable spacing and consistent project cards.",
   "platforms": {
     "android-aarch64": {
       "path": "downloads/project-garage-arm64-debug.apk",
-      "sha256": "7983e997c49d9a7c722a5b065dbcddd9ba52606e629afb08a407692dbad28b85",
-      "size": 29095841
+      "sha256": "fe33112e7cd5dfb57524820155eb863848623b72ae481a8d074e79c008a70a82",
+      "size": 29095777
     },
     "windows-x86_64": {
       "path": "downloads/project-garage-windows.exe",
-      "sha256": "1c9cb0749e2fba01ec129174843c753188369884d7d98b34c8798e066e32f9fa",
+      "sha256": "8adb721942059c283976128eab7787d24d38a71fbdfc1cfb9e44265c9f109901",
       "size": 14615552
     }
   }

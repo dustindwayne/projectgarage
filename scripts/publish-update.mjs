@@ -22,7 +22,7 @@ writeFileSync(
   JSON.stringify(
     {
       version,
-      notes: 'Token-free public updates, new accent-aware logo, true black and charcoal dark mode, and phone-first project screens.',
+      notes: 'Balanced phone layout with centered branding, overview, and stats; comfortable spacing and consistent project cards.',
       platforms,
     },
     null,
