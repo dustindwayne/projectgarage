@@ -41,7 +41,7 @@ Spending includes car acquisition and paid parts, with project/date filters, mon
 
 ## Import and phone transfer
 
-**Settings → Import saved garage** accepts a full garage JSON export with receipts and journal photos. Owners review the preview before importing. Import adds new projects and missing items/journal entries in matching projects; existing records retain their current values. Currency must match. Repeated imports do not duplicate records; invalid imports fail atomically.
+**Settings → Garage backups** accepts a full garage JSON export with receipts and journal photos. Owners review the preview before importing. Import adds new projects and missing items/journal entries in matching projects; existing records retain their current values. Currency must match. Repeated imports do not duplicate records; invalid imports fail atomically.
 
 On desktop, choose **Import from phone** beside a discovered Android app. Open Settings on both devices, verify the matching eight-character code, approve on the phone, then review and confirm the desktop import. A temporary desktop connection receives an AES-GCM encrypted backup using a fresh X25519 session key. Android has no HTTP server or listening TCP server. Discovery uses UDP, and the phone connects outward to the desktop for the approved transfer. Sessions expire after 90 seconds; networks/firewalls can block them. This is a reviewed import, not ongoing synchronization. Physical-device Wi-Fi testing remains outstanding.
 

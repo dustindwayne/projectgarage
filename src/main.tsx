@@ -1561,7 +1561,7 @@ function SettingsPage({
         <section className="settings-card">
           <h2>
             <Download size={19} />
-            Your build records
+            Garage backups
           </h2>
           <p>
             Export a copy of your garage, including parts, purchase records, receipts, and progress
@@ -1599,8 +1599,8 @@ function SettingsPage({
           <small className="settings-help">
             Keep a copy somewhere safe. Import a saved export below.
           </small>
+          <GarageImport embedded snapshot={snapshot} disabled={disabled} onImport={mutate} />
         </section>
-        <GarageImport snapshot={snapshot} disabled={disabled} onImport={mutate} />
         <section className="settings-card">
           <h2>
             <WifiOff size={19} />

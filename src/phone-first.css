@@ -1124,3 +1124,13 @@ html[data-theme='dark']
   overflow-wrap: anywhere;
   font-variant-numeric: tabular-nums;
 }
+
+.garage-backup-import {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+.garage-backup-import h3 {
+  margin: 0 0 12px;
+  font-size: 17px;
+}

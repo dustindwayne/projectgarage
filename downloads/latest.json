@@ -1,15 +1,15 @@
 {
-  "version": "0.5.0",
-  "notes": "On-device receipt scanning with review, price statistics, saved garage import, and phone-approved encrypted Wi-Fi transfers.",
+  "version": "0.5.1",
+  "notes": "Garage import and export now share a single Garage backups area in Settings.",
   "platforms": {
     "android-aarch64": {
       "path": "downloads/project-garage-arm64-debug.apk",
-      "sha256": "ff44e06a31f347f6e77d3f998549c5dd57917184291bd00b5ec9d08613e4f145",
-      "size": 43463777
+      "sha256": "78b607d5f566394b7f24821d7bc409fdb92e671fadbab2c25cf405cb9ce1ca07",
+      "size": 43463201
     },
     "windows-x86_64": {
       "path": "downloads/project-garage-windows.exe",
-      "sha256": "ec21839bc57b3cba8e686ce76a3666e4e3697f640f2a76ebc2d87220e6a25e4d",
+      "sha256": "b13cb31bf0cf6fec23da893e88315247ac4b1e5e3d99e05f15bff7f17b15683b",
       "size": 28653568
     }
   },

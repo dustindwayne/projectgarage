@@ -39,7 +39,7 @@ writeFileSync(
     {
       version,
       notes:
-        'On-device receipt scanning with review, price statistics, saved garage import, and phone-approved encrypted Wi-Fi transfers.',
+        'Garage import and export now share a single Garage backups area in Settings.',
       platforms,
       tools,
     },

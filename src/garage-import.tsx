@@ -5,11 +5,13 @@ export function GarageImport({
   disabled,
   onImport,
   incoming,
+  embedded = false,
 }: {
   snapshot: Snapshot;
   disabled: boolean;
   onImport: (action: unknown) => Promise<void>;
   incoming?: Snapshot['garage'];
+  embedded?: boolean;
 }) {
   const [backup, setBackup] = useState<Snapshot['garage'] | null>(null),
     [error, setError] = useState(''),
@@ -39,8 +41,8 @@ export function GarageImport({
       0,
     ) || 0;
   return (
-    <section className="settings-card">
-      <h2>Import saved garage</h2>
+    <div className={embedded ? 'garage-backup-import' : 'settings-card'}>
+      {embedded ? <h3>Import garage backup</h3> : <h2>Import saved garage</h2>}
       <p>
         Choose a garage export saved from your phone or another device. New projects keep their
         parts, receipts, and journal photos. Matching projects gain missing items and journal
@@ -129,6 +131,6 @@ export function GarageImport({
           </button>
         </>
       )}
-    </section>
+    </div>
   );
 }
