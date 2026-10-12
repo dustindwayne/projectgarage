@@ -10,7 +10,9 @@ Android comes first, with a shared Rust foundation and a Tauri 2 app shell for W
 
 ## Build status
 
-The first working version includes the responsive interface, Rust core, SQLite service, account flow, shared-garage permissions, and cross-platform shell. The interface and native Windows executable build successfully, and all five Rust permission and service tests pass. Android packaging requires the SDK command-line tools, NDK, and Rust Android target. This is an early development build, not a store-ready Android release.
+The first working version includes the responsive interface, Rust core, SQLite service, account flow, shared-garage permissions, and cross-platform shell. The Android ARM64 debug APK, interface, and native Windows executable build successfully, and all six Rust permission and service tests pass. This is an early development build, not a store-ready Android release. Physical-device testing remains to be done.
+
+**[Download the Android test APK](downloads/project-garage-arm64-debug.apk)** · [Build notes](downloads/README.md)
 
 ## What belongs in your garage
 
@@ -87,6 +89,8 @@ npm run tauri android dev
 # or
 npm run tauri android build -- --apk
 ```
+
+On Windows, `./scripts/build-android.ps1` builds an ARM64 debug APK and copies it to `artifacts/project-garage-arm64-debug.apk`. It uses Android Studio's Java runtime and includes a file-copy fallback for machines that do not permit symbolic links. The **Android APK** GitHub Actions workflow also builds a downloadable test APK on pushes to `main`.
 
 Native clients connect to the same garage service. Use an HTTPS service address for real devices and shared garages. `localhost` on a phone points to that phone, not your computer. The Android emulator can reach the host computer at `10.0.2.2`; HTTP emulator access is for development only.
 
