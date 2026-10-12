@@ -1,11 +1,82 @@
 export type Status = 'needed' | 'purchased' | 'received' | 'installed';
-export type Item = {id:string; name:string; kind:'part'|'job'; status:Status; required:boolean; pending:boolean; price_cents:number; seller:string; purchased_on:string; warranty:string; receipt:string; receipt_name:string; notes:string};
-export type Entry = {id:string; date:string; title:string; notes:string; photos:string[]; author:string};
-export type Car = {id:string; name:string; year:string; make:string; model:string; color:string; notes:string; cover:string; items:Item[]; journal:Entry[]};
-export type Member = {id:string; name:string; email:string; role:'owner'|'staff'};
-export type Snapshot = {garage:{name:string; currency:string; cars:Car[]}; user:Member; members:Member[]; revision:number};
-export const emptyCar = ():Car => ({id:'',name:'',year:'',make:'',model:'',color:'#72806a',notes:'',cover:'',items:[],journal:[]});
-export const emptyItem = ():Item => ({id:'',name:'',kind:'part',status:'needed',required:true,pending:false,price_cents:0,seller:'',purchased_on:'',warranty:'',receipt:'',receipt_name:'',notes:''});
-export const progress = (car:Car) => {const required=car.items.filter(i=>i.required&&!i.pending); return {done:required.filter(i=>i.status==='installed').length,total:required.length};};
-export const spent = (car:Car) => car.items.filter(i=>!i.pending&&i.kind==='part'&&i.status!=='needed').reduce((sum,i)=>sum+i.price_cents,0);
-export const today = () => {const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
+export type Item = {
+  id: string;
+  name: string;
+  kind: 'part' | 'job';
+  status: Status;
+  required: boolean;
+  pending: boolean;
+  price_cents: number;
+  seller: string;
+  purchased_on: string;
+  warranty: string;
+  receipt: string;
+  receipt_name: string;
+  notes: string;
+};
+export type Entry = {
+  id: string;
+  date: string;
+  title: string;
+  notes: string;
+  photos: string[];
+  author: string;
+};
+export type Car = {
+  id: string;
+  name: string;
+  year: string;
+  make: string;
+  model: string;
+  color: string;
+  notes: string;
+  cover: string;
+  items: Item[];
+  journal: Entry[];
+};
+export type Member = { id: string; name: string; email: string; role: 'owner' | 'staff' };
+export type Snapshot = {
+  garage: { name: string; currency: string; cars: Car[] };
+  user: Member;
+  members: Member[];
+  revision: number;
+};
+export const emptyCar = (): Car => ({
+  id: '',
+  name: '',
+  year: '',
+  make: '',
+  model: '',
+  color: '#72806a',
+  notes: '',
+  cover: '',
+  items: [],
+  journal: [],
+});
+export const emptyItem = (): Item => ({
+  id: '',
+  name: '',
+  kind: 'part',
+  status: 'needed',
+  required: true,
+  pending: false,
+  price_cents: 0,
+  seller: '',
+  purchased_on: '',
+  warranty: '',
+  receipt: '',
+  receipt_name: '',
+  notes: '',
+});
+export const progress = (car: Car) => {
+  const required = car.items.filter((i) => i.required && !i.pending);
+  return { done: required.filter((i) => i.status === 'installed').length, total: required.length };
+};
+export const spent = (car: Car) =>
+  car.items
+    .filter((i) => !i.pending && i.kind === 'part' && i.status !== 'needed')
+    .reduce((sum, i) => sum + i.price_cents, 0);
+export const today = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};

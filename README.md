@@ -10,7 +10,7 @@ Android comes first, with a shared Rust foundation and a Tauri 2 app shell for W
 
 ## Build status
 
-The first working version includes the responsive interface, Rust core, SQLite service, account flow, shared-garage permissions, and cross-platform shell. The interface builds successfully, and the Rust permission and service tests pass. Native platform builds are being verified on `main`. This is an early development build, not a store-ready Android release.
+The first working version includes the responsive interface, Rust core, SQLite service, account flow, shared-garage permissions, and cross-platform shell. The interface and native Windows executable build successfully, and all five Rust permission and service tests pass. Android packaging requires the SDK command-line tools, NDK, and Rust Android target. This is an early development build, not a store-ready Android release.
 
 ## What belongs in your garage
 
@@ -27,17 +27,17 @@ The first working version includes the responsive interface, Rust core, SQLite s
 
 ## Owner and staff access
 
-| Action | Owner | Staff |
-| --- | --- | --- |
-| Add, remove, or configure cars | Yes | No |
-| Rename or configure the garage | Yes | No |
-| Update approved parts and purchase records | Yes | Yes |
-| Mark parts received or installed | Yes | Yes |
-| Complete approved jobs | Yes | Yes |
-| Add dated journal entries and photos | Yes | Yes |
-| Suggest parts or work | Yes | Yes, pending approval |
-| Approve suggestions or change required work | Yes | No |
-| Invite or remove staff | Yes | No |
+| Action                                      | Owner | Staff                 |
+| ------------------------------------------- | ----- | --------------------- |
+| Add, remove, or configure cars              | Yes   | No                    |
+| Rename or configure the garage              | Yes   | No                    |
+| Update approved parts and purchase records  | Yes   | Yes                   |
+| Mark parts received or installed            | Yes   | Yes                   |
+| Complete approved jobs                      | Yes   | Yes                   |
+| Add dated journal entries and photos        | Yes   | Yes                   |
+| Suggest parts or work                       | Yes   | Yes, pending approval |
+| Approve suggestions or change required work | Yes   | No                    |
+| Invite or remove staff                      | Yes   | No                    |
 
 Staff invitations expire after seven days and can be used once. Account passwords are hashed with Argon2. The Rust service checks permissions for every change, and revision checks prevent one person's update from silently overwriting another's.
 
@@ -92,10 +92,10 @@ Native clients connect to the same garage service. Use an HTTPS service address 
 
 ## Service configuration
 
-| Variable | Default | Purpose |
-| --- | --- | --- |
-| `GARAGE_BIND` | `127.0.0.1:3030` | Service listen address |
-| `GARAGE_DB` | `data/garage.db` | SQLite database location |
+| Variable         | Default                             | Purpose                                |
+| ---------------- | ----------------------------------- | -------------------------------------- |
+| `GARAGE_BIND`    | `127.0.0.1:3030`                    | Service listen address                 |
+| `GARAGE_DB`      | `data/garage.db`                    | SQLite database location               |
 | `GARAGE_ORIGINS` | Local development and Tauri origins | Comma-separated allowed client origins |
 
 Build the interface with `npm run build` before using the Rust service to serve it directly at `http://127.0.0.1:3030`. Start the service from the repository root so it can find `dist/`.

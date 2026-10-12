@@ -6,3 +6,5 @@ src-tauri/gen/
 *.db*
 *.log
 .env
+*.tsbuildinfo
+artifacts/

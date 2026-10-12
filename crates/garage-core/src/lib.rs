@@ -111,6 +111,14 @@ impl Garage {
                     return Err("Enter a valid price".into());
                 }
                 validate_receipt(&item.receipt)?;
+                if item.kind == "job" {
+                    if ![Status::Needed, Status::Installed].contains(&item.status) {
+                        return Err("Jobs are either needed or completed".into());
+                    }
+                    item.price_cents = 0;
+                    item.receipt.clear();
+                    item.receipt_name.clear();
+                }
                 let car = self.car_mut(&car_id)?;
                 if let Some(existing) = car.items.iter_mut().find(|i| i.id == item.id) {
                     if !owner
@@ -432,5 +440,38 @@ mod tests {
                 }
             )
             .is_err());
+    }
+    #[test]
+    fn jobs_cannot_be_purchased_or_add_labor_costs() {
+        let mut g = Garage::new("Kevin");
+        g.apply(&Role::Owner, "Kevin", Action::SaveCar { car: car() })
+            .unwrap();
+        let cid = g.cars[0].id.clone();
+        let mut work = item();
+        work.kind = "job".into();
+        work.status = Status::Purchased;
+        assert!(g
+            .apply(
+                &Role::Owner,
+                "Kevin",
+                Action::SaveItem {
+                    car_id: cid.clone(),
+                    item: work.clone()
+                }
+            )
+            .is_err());
+        work.status = Status::Installed;
+        g.apply(
+            &Role::Owner,
+            "Kevin",
+            Action::SaveItem {
+                car_id: cid,
+                item: work,
+            },
+        )
+        .unwrap();
+        assert_eq!(g.cars[0].items[0].price_cents, 0);
+        assert_eq!(progress(&g.cars[0]), (1, 1));
+        assert_eq!(spending(&g.cars[0]), 0);
     }
 }
