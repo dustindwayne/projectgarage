@@ -22,7 +22,7 @@ writeFileSync(
   JSON.stringify(
     {
       version,
-      notes: 'GitHub in-app updates for Android and Windows. Your garage stays on your device.',
+      notes: 'Mobile-first navigation, accent colors, per-project journals, filtered spending, and OpenAI / Claude / Grok garage assistants.',
       platforms,
     },
     null,

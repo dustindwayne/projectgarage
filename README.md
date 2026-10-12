@@ -12,7 +12,7 @@ Android comes first, with a shared Rust foundation and a Tauri 2 app shell for W
 
 ## Build status
 
-The app includes on-device Rust/SQLite storage, personal welcome, parts and expense tracking, photo journal, System/Light/Dark themes, and optional shared-garage permissions. Ten Rust tests cover permissions, acquisition totals, saved-data compatibility, persistence, and desktop discovery of Android announcements. This is an early development build, not a store-ready Android release. Physical-device testing remains to be done.
+The app includes on-device Rust/SQLite storage, personal welcome, parts and expense tracking, photo journal, System/Light/Dark themes, and optional shared-garage permissions. Seventeen Rust tests cover permissions, acquisition totals, saved-data compatibility, persistence, Android discovery, AI record patches, atomic batches, and update verification. This is an early development build, not a store-ready Android release. Physical-device testing remains to be done.
 
 **[Download the Android test APK](downloads/project-garage-arm64-debug.apk)** · [Build notes](downloads/README.md)
 
@@ -41,7 +41,7 @@ Discovery uses UDP port 39073. Guest-network isolation or a firewall can prevent
 
 ## In-app updates from GitHub
 
-Install version **0.2.0** once to enable updates. Open **Settings → App updates** to check GitHub and download a newer version. Optional startup checks run at most every four hours and show a banner when a newer installer is available.
+Install version **0.3.0** (or the earlier **0.2.0**) once to enable updates. Open **Settings → App updates** to check GitHub and download a newer version. Optional startup checks run at most every four hours and show a banner when a newer installer is available.
 
 The update channel is `downloads/latest.json` on `main`. Downloads come from this repository through GitHub's HTTPS API, with expected size and SHA-256 verified before installation. Android additionally checks the package identity, newer version code, and matching APK signer before opening its system installer for your approval. Windows downloads its new executable, closes the app, replaces it, and restarts. Garage data stays in the app's data directory.
 
@@ -152,3 +152,18 @@ public/                 Project Garage branding
 ```
 
 Development takes place on **main**.
+## Phone workflow and personalization (0.3.0)
+
+Phone navigation keeps **Garage**, **Assistant**, **Spending**, and **Settings** within thumb reach. Open a car to access its **Build journal**; journals are no longer a separate garage-wide destination. Phone forms fill the screen, and the desktop workspace expands at 960px.
+
+Under **Settings → Appearance**, choose a preset accent or a custom color. Theme and accent are remembered on this device. Spending defaults to all cars and can be filtered to one car. It separates initial car purchases from purchased parts and lists purchase dates, sellers, and saved receipts. Needed parts and pending suggestions do not count as money spent.
+
+## Garage AI assistant
+
+The installed Android and desktop apps connect directly to **OpenAI (ChatGPT models)**, **Anthropic Claude**, or **xAI Grok** over HTTPS. In Settings or Assistant, select your provider, enter a model ID available to your account, and supply its API key. Ordinary chat subscriptions are not API credentials; provider API usage is billed separately. Keys remain in frontend/native request memory and are never saved in settings, backups, SQLite, or the repository. Close the app or choose **Disconnect and forget key** to clear access.
+
+The assistant can answer garage questions and create, edit, delete, or update car and part records, approve suggestions, record purchases, and add or remove journal entries. Requested changes save automatically with **full control of records**, limited by the signed-in user's existing owner/staff permissions. It cannot manage member access, install updates, run shell commands, or change credentials. Garage text records are sent to the selected provider; photo and receipt binaries, journal authors, and member contact fields are omitted. Existing attachment files are preserved during partial edits. Text entered in notes is included, so avoid putting credentials in notes.
+
+Changes use a bounded batch: invalid actions or a changed garage revision reject the whole batch. The activity view records the last ten requests in the current session. New cars must be created first before requesting their parts, because saved car IDs are assigned locally. AI has no background autonomous access and only acts when you press **Run request**. Browser previews do not receive API keys; this feature runs in installed apps. No Android local server is introduced.
+
+Provider request formats follow the [OpenAI Chat Completions API](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create), [Claude Messages API](https://platform.claude.com/docs/en/api/messages/create), and [xAI Chat Completions API](https://docs.x.ai/developers/rest-api-reference/inference/chat-completions). Provider access was not tested against live accounts in development; no provider keys were available. Rust tests cover attachment preservation, missing IDs, omitted identity/media, atomic rollback, permissions, persistence, discovery, and update verification.

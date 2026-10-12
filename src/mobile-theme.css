@@ -159,7 +159,7 @@ html[data-theme='dark'] :is(.add-card, .back, .filters button, .tabs button, .ic
   color: var(--muted);
 }
 html[data-theme='dark'] :is(.tabs button.active, .heading-dot, .text-link) {
-  color: #c2f218;
+  color: var(--lime);
 }
 html[data-theme='dark'] :is(.pill.needed, .status-select.needed, .approval-note, .offline-banner) {
   background: #403a23;
@@ -182,7 +182,7 @@ html[data-theme='dark'] :is(.form-error, .error-banner) {
   color: #f5b1a0;
 }
 html[data-theme='dark'] .primary {
-  background: #c2f218;
+  background: var(--lime);
   color: #1c2514;
 }
 html[data-theme='dark'] .primary svg {

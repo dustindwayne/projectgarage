@@ -40,12 +40,15 @@ import {
   native,
 } from './api';
 import { emptyCar, emptyItem, progress, spent, partsSpent, today } from './types';
-import { ThemeControl } from './theme';
+import { ThemeControl, AccentControl } from './theme';
 import { NearbyDevices } from './nearby';
 import { UpdatesProvider, UpdatesCard, UpdatesBanner } from './updates';
 import type { Car, Item, Entry, Snapshot, Status } from './types';
 import './styles.css';
 import './mobile-theme.css';
+import './phone-first.css';
+import { AssistantProvider, AssistantSettings, AssistantPanel } from './assistant';
+import { Spending } from './spending';
 
 const labels: Record<Status, string> = {
   needed: 'Needed',
@@ -81,6 +84,9 @@ function App() {
     [filter, setFilter] = useState('all'),
     [search, setSearch] = useState(''),
     [modal, setModal] = useState<Modal>(null);
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }, [page, selected]);
   const snapRef = useRef(snapshot);
   snapRef.current = snapshot;
   const refreshing = useRef(false);
@@ -171,13 +177,16 @@ function App() {
       return () => clearTimeout(timer);
     }
   }, [notice]);
-  async function mutate(action: unknown) {
+  async function mutate(action: unknown, expectedRevision?: number) {
     if (offline && !isDeviceMode())
       throw new Error('Reconnect to make changes. Your saved garage is available to view.');
     setBusy(true);
     setError('');
     try {
-      const value = await api<Snapshot>('action', { revision: snapRef.current!.revision, action });
+      const value = await api<Snapshot>('action', {
+        revision: expectedRevision ?? snapRef.current!.revision,
+        action,
+      });
       await accept(value);
       setNotice('Garage updated');
     } catch (e) {
@@ -263,7 +272,7 @@ function App() {
   const confirm = (title: string, message: string, action: () => Promise<void>) =>
     setModal({ type: 'confirm', title, message, action });
   return (
-    <div className="app-shell">
+    <div className={`app-shell page-${page} ${car ? 'project-open' : ''}`}>
       <aside className="sidebar">
         <Brand />
         <div className="garage-label">YOUR WORKSPACE</div>
@@ -277,7 +286,7 @@ function App() {
         <nav>
           {[
             { id: 'garage', icon: CarFront, label: 'My garage' },
-            { id: 'journal', icon: Camera, label: 'Build journal' },
+            { id: 'assistant', icon: Wrench, label: 'AI assistant' },
             { id: 'purchases', icon: Receipt, label: 'Spending' },
             { id: 'settings', icon: Settings, label: 'Garage settings' },
           ].map((n) => (
@@ -362,6 +371,10 @@ function App() {
             </button>
           </div>
         )}
+        <div className="phone-header">
+          <Brand />
+          <span>{user.name}'s garage</span>
+        </div>
         <main>
           {page === 'garage' && !car && (
             <>
@@ -384,7 +397,7 @@ function App() {
                   </button>
                 )}
               </div>
-              <section className="stats">
+              <section className="stats garage-stats">
                 <Stat label="PROJECT CARS" value={String(garage.cars.length)} icon={<CarFront />} />
                 <Stat label="TOTAL SPENT" value={money(totalSpent)} icon={<Receipt />} />
                 <Stat label="STILL NEEDED" value={String(needed)} icon={<Wrench />} />
@@ -760,108 +773,17 @@ function App() {
               )}
             </>
           )}
-          {page === 'journal' && (
-            <>
-              <div className="page-heading">
-                <div>
-                  <p className="eyebrow">THE STORY SO FAR</p>
-                  <h1>
-                    Build journal<span className="heading-dot">.</span>
-                  </h1>
-                  <p>The late nights and little victories, all in one place.</p>
-                </div>
-                <button
-                  className="primary"
-                  disabled={disabled || !garage.cars.length}
-                  onClick={() => setModal({ type: 'entry', carId: garage.cars[0]?.id || '' })}
-                >
-                  <Camera size={17} />
-                  Add journal entry
-                </button>
-              </div>
-              <Journal
-                entries={garage.cars.flatMap((c) =>
-                  c.journal.map((e) => ({ ...e, carName: c.name })),
-                )}
-                members={members}
-                onPhoto={(src) => setModal({ type: 'photo', src })}
-                disabled={disabled}
-              />
-            </>
-          )}
           {page === 'purchases' && (
-            <>
-              <div className="page-heading">
-                <div>
-                  <p className="eyebrow">KEEP THE PAPER TRAIL</p>
-                  <h1>
-                    Spending<span className="heading-dot">.</span>
-                  </h1>
-                  <p>Every purchase, receipt, and warranty has a home.</p>
-                </div>
-              </div>
-              <section className="stats two">
-                <Stat
-                  label="TOTAL SPENT ACROSS YOUR GARAGE"
-                  value={money(totalSpent)}
-                  icon={<Receipt />}
-                />
-                <Stat
-                  label="PURCHASED PARTS"
-                  value={String(
-                    allItems.filter((i) => !i.pending && i.kind === 'part' && i.status !== 'needed')
-                      .length,
-                  )}
-                  icon={<Package />}
-                />
-              </section>
-              {garage.cars.map((c) => (
-                <section className="spending-car" key={c.id}>
-                  <div className="section-heading">
-                    <button className="text-link" onClick={() => showCar(c.id)}>
-                      {c.name}
-                      <ChevronRight size={16} />
-                    </button>
-                    <strong>{money(spent(c))}</strong>
-                  </div>
-                  <div className="acquisition-summary">
-                    <span>
-                      Car purchase{' '}
-                      <strong>
-                        {c.purchase_price_cents == null
-                          ? 'Not recorded'
-                          : money(c.purchase_price_cents)}
-                      </strong>
-                    </span>
-                    <span>
-                      Parts purchased <strong>{money(partsSpent(c))}</strong>
-                    </span>
-                    {c.acquired_from && <p>From {c.acquired_from}</p>}
-                  </div>
-                  {c.items
-                    .filter((i) => !i.pending && i.kind === 'part' && i.status !== 'needed')
-                    .map((i) => (
-                      <ItemRow
-                        key={i.id}
-                        item={i}
-                        money={money}
-                        disabled={disabled}
-                        onEdit={() => setModal({ type: 'item', carId: c.id, item: i })}
-                      />
-                    ))}
-                  {!c.items.some(
-                    (i) => !i.pending && i.kind === 'part' && i.status !== 'needed',
-                  ) && <p className="muted">No purchases recorded yet.</p>}
-                </section>
-              ))}
-              {!garage.cars.length && (
-                <Empty
-                  icon={<Receipt size={36} />}
-                  title="Keep track from the first purchase."
-                  text="Add a car and record purchased parts to see spending here."
-                />
-              )}
-            </>
+            <Spending
+              cars={garage.cars}
+              currency={garage.currency}
+              onCar={showCar}
+              onEdit={(carId, item) => setModal({ type: 'item', carId, item })}
+              disabled={disabled}
+            />
+          )}
+          {page === 'assistant' && (
+            <AssistantPanel snapshot={snapshot} disabled={disabled} mutate={mutate} />
           )}
           {page === 'settings' && (
             <SettingsPage
@@ -895,7 +817,7 @@ function App() {
       <nav className="mobile-nav">
         {[
           { id: 'garage', icon: CarFront, label: 'Garage' },
-          { id: 'journal', icon: Camera, label: 'Journal' },
+          { id: 'assistant', icon: Wrench, label: 'Assistant' },
           { id: 'purchases', icon: Receipt, label: 'Spending' },
           { id: 'settings', icon: Settings, label: 'Settings' },
         ].map((n) => (
@@ -1477,7 +1399,9 @@ function SettingsPage({
           <h2>Appearance</h2>
           <p>Choose what feels comfortable. System follows your device’s appearance.</p>
           <ThemeControl />
+          <AccentControl />
         </section>
+        <AssistantSettings />
         <NearbyDevices />
         <UpdatesCard />
         <section className="settings-card">
@@ -2286,6 +2210,8 @@ function ModalView({
 }
 createRoot(document.getElementById('root')!).render(
   <UpdatesProvider>
-    <App />
+    <AssistantProvider>
+      <App />
+    </AssistantProvider>
   </UpdatesProvider>,
 );

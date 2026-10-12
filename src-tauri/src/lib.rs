@@ -1,4 +1,5 @@
 use tauri::Manager;
+mod assistant;
 mod nearby;
 mod updates;
 #[tauri::command]
@@ -64,6 +65,7 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            assistant::ask_garage_ai,
             export_backup,
             device_request,
             nearby_devices,

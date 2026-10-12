@@ -38,13 +38,13 @@ button {
 }
 button:focus-visible,
 a:focus-visible {
-  outline: 3px solid #819e24;
+  outline: 3px solid var(--lime);
   outline-offset: 3px;
 }
 input:focus,
 textarea:focus,
 select:focus {
-  outline: 2px solid #91ad31;
+  outline: 2px solid var(--lime);
   outline-offset: 1px;
 }
 button,
@@ -158,7 +158,7 @@ button svg {
   font-size: 13px;
 }
 .sidebar nav button.active {
-  background: #c2f218;
+  background: var(--lime);
   color: #202622;
   font-weight: 650;
 }
@@ -168,7 +168,7 @@ button svg {
 .count {
   margin-left: auto;
   background: #202622;
-  color: #c2f218;
+  color: var(--lime);
   border-radius: 4px;
   padding: 2px 5px;
   font-size: 10px;
@@ -1684,7 +1684,7 @@ footer {
     font-size: 9px;
   }
   .mobile-nav button.active {
-    color: #c2f218;
+    color: var(--lime);
   }
   .main-area {
     padding-bottom: 65px;

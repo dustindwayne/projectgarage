@@ -75,6 +75,19 @@ impl Garage {
     pub fn apply(&mut self, role: &Role, author: &str, action: Action) -> Result<(), String> {
         let owner = *role == Role::Owner;
         match action {
+            Action::Batch { actions } => {
+                if actions.is_empty()
+                    || actions.len() > 32
+                    || actions.iter().any(|a| matches!(a, Action::Batch { .. }))
+                {
+                    return Err("Use between 1 and 32 non-nested changes".into());
+                }
+                let mut next = self.clone();
+                for action in actions {
+                    next.apply(role, author, action)?;
+                }
+                *self = next;
+            }
             Action::Configure { name, currency } => {
                 require_owner(owner)?;
                 valid_name(&name)?;
@@ -305,6 +318,9 @@ pub fn progress(car: &Car) -> (usize, usize) {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Action {
+    Batch {
+        actions: Vec<Action>,
+    },
     Configure {
         name: String,
         currency: String,
@@ -350,6 +366,33 @@ mod tests {
     }
     fn item() -> Item {
         serde_json::from_value(serde_json::json!({"id":"", "name":"Brakes", "kind":"part", "status":"needed", "required":true,"pending":false,"price_cents":12500,"seller":"", "purchased_on":"", "warranty":"", "receipt":"", "receipt_name":"", "notes":""})).unwrap()
+    }
+    #[test]
+    fn batch_rolls_back_on_invalid_action_and_enforces_role() {
+        let mut g = Garage::new("Kevin");
+        let batch = || Action::Batch {
+            actions: vec![
+                Action::Configure {
+                    name: "Changed".into(),
+                    currency: "USD".into(),
+                },
+                Action::DeleteCar {
+                    car_id: "missing".into(),
+                },
+            ],
+        };
+        assert!(g.apply(&Role::Owner, "Kevin", batch()).is_err());
+        assert_eq!(g.name, "Kevin's Project Garage");
+        assert!(g.apply(&Role::Staff, "Staff", batch()).is_err());
+        assert!(g
+            .apply(
+                &Role::Owner,
+                "Kevin",
+                Action::Batch {
+                    actions: vec![Action::Batch { actions: vec![] }]
+                }
+            )
+            .is_err());
     }
     #[test]
     fn staff_cannot_create_or_configure_cars() {

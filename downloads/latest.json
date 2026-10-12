@@ -1,16 +1,16 @@
 {
-  "version": "0.2.0",
-  "notes": "GitHub in-app updates for Android and Windows. Your garage stays on your device.",
+  "version": "0.3.0",
+  "notes": "Mobile-first navigation, accent colors, per-project journals, filtered spending, and OpenAI / Claude / Grok garage assistants.",
   "platforms": {
     "android-aarch64": {
       "path": "downloads/project-garage-arm64-debug.apk",
-      "sha256": "faf0b122ade8b1dd4f0d6037b221ee795bf532ed99c6e1ce948f0ad3a09ab1e5",
-      "size": 29003470
+      "sha256": "c39117ee29c6b4ee9b747d425a098173e819b15894975559d17241c5a251a37e",
+      "size": 29188782
     },
     "windows-x86_64": {
       "path": "downloads/project-garage-windows.exe",
-      "sha256": "e60f9a8bfd823c058634e9cd1abb6514e9dd7b08d4c65e90f391b3a64bb610f9",
-      "size": 14460928
+      "sha256": "6f7acccab45eadc88d9e7d608f1d7125d7d214f4a0324d7ba006070f9a4c55f5",
+      "size": 14614528
     }
   }
 }
