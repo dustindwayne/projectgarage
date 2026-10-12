@@ -942,3 +942,58 @@ html[data-theme='dark']
     top: 0;
   }
 }
+.agent-access summary {
+  cursor: pointer;
+  min-height: 44px;
+  font-size: 16px;
+  font-weight: 600;
+  display: list-item;
+}
+.agent-access > p {
+  font-size: 14px;
+  line-height: 1.7;
+  margin: 14px 0;
+  color: var(--muted);
+}
+.agent-access > details {
+  margin: 16px 0;
+}
+.agent-access textarea {
+  width: 100%;
+  min-height: 200px;
+  padding: 14px;
+  background: var(--soft);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.optional-assistant {
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+  margin-top: 20px;
+}
+.optional-assistant p {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--muted);
+  margin: 12px 0;
+}
+.agent-import {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  margin-top: 16px;
+}
+.agent-import li {
+  margin: 10px 0;
+  overflow-wrap: anywhere;
+}
+.agent-import button {
+  margin: 8px 8px 0 0;
+}
+.agent-access .button-row {
+  flex-wrap: wrap;
+  gap: 12px;
+}

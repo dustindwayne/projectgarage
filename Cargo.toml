@@ -1,4 +1,4 @@
 [workspace]
-members = ["crates/garage-core", "crates/garage-server", "src-tauri"]
+members = ["crates/garage-core", "crates/garage-server", "src-tauri", "crates/garage-agent"]
 default-members = ["crates/garage-core", "crates/garage-server"]
 resolver = "2"

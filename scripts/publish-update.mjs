@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync, copyFileSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 const version = JSON.parse(readFileSync('src-tauri/tauri.conf.json', 'utf8')).version;
 const platforms = {};
+const tools = {};
 for (const [key, source, target] of [
   [
     'android-aarch64',
@@ -17,13 +18,30 @@ for (const [key, source, target] of [
   platforms[key] = { path: target, sha256, size: bytes.length };
   writeFileSync(`${target}.sha256`, `${sha256}  ${target.split('/').pop()}\n`);
 }
+const agentSource = 'target/release/garage-agent.exe';
+if (!existsSync(agentSource)) throw new Error('Build garage-agent before publishing');
+copyFileSync(agentSource, 'downloads/project-garage-agent.exe');
+const agentBytes = readFileSync('downloads/project-garage-agent.exe');
+tools.agent_bridge = {
+  path: 'downloads/project-garage-agent.exe',
+  sha256: createHash('sha256').update(agentBytes).digest('hex'),
+  size: agentBytes.length,
+};
+for (const [source, target] of [
+  ['skills/project-garage-agent/SKILL.md', 'project-garage-agent-skill.md'],
+  ['skills/project-garage-agent/references/actions.md', 'project-garage-agent-actions.md'],
+  ['skills/project-garage-agent/scripts/bootstrap.ps1', 'project-garage-agent-bootstrap.ps1'],
+])
+  copyFileSync(source, 'downloads/' + target);
 writeFileSync(
   'downloads/latest.json',
   JSON.stringify(
     {
       version,
-      notes: 'Balanced phone layout with centered branding, overview, and stats; comfortable spacing and consistent project cards.',
+      notes:
+        'External-agent skill and direct desktop data bridge. Optional built-in AI stays out of main navigation unless enabled.',
       platforms,
+      tools,
     },
     null,
     2,

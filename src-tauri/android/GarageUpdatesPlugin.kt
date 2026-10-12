@@ -43,4 +43,16 @@ class GarageUpdatesPlugin(private val activity: Activity): Plugin(activity) {
             invoke.resolve(JSObject().put("status","installer_opened"))
         } catch(error:Exception){invoke.reject("Could not open the Android installer: "+error.message)}
     }
+    @Command
+    fun shareContext(invoke:Invoke) {
+        try {
+            val file=File(invoke.getArgs().getString("path")).canonicalFile
+            val allowed=File(activity.cacheDir,"project-garage-agent-context.json").canonicalFile
+            if(file!=allowed||!file.isFile){invoke.reject("Invalid agent context file");return}
+            val uri=FileProvider.getUriForFile(activity,activity.packageName+".fileprovider",file)
+            val send=Intent(Intent.ACTION_SEND).setType("application/json").putExtra(Intent.EXTRA_STREAM,uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            activity.startActivity(Intent.createChooser(send,"Share garage context with your agent"))
+            invoke.resolve(JSObject().put("status","shared"))
+        } catch(error:Exception){invoke.reject("Could not share garage context: "+error.message)}
+    }
 }

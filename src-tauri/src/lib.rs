@@ -48,6 +48,22 @@ fn export_backup(app: tauri::AppHandle, contents: String) -> Result<String, Stri
     std::fs::write(&path, contents).map_err(|e| e.to_string())?;
     Ok(path.to_string_lossy().into_owned())
 }
+#[tauri::command]
+async fn export_agent_context(app: tauri::AppHandle, contents: String) -> Result<String, String> {
+    if contents.len() > 1_000_000 {
+        return Err("Agent context is too large".into());
+    }
+    let path = app
+        .path()
+        .app_cache_dir()
+        .map_err(|e| e.to_string())?
+        .join("project-garage-agent-context.json");
+    std::fs::create_dir_all(path.parent().ok_or("Invalid cache path")?)
+        .map_err(|e| e.to_string())?;
+    std::fs::write(&path, contents).map_err(|e| e.to_string())?;
+    updates::share_agent_context(&app, &path).await?;
+    Ok(path.to_string_lossy().into_owned())
+}
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -67,6 +83,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             assistant::ask_garage_ai,
             export_backup,
+            export_agent_context,
             device_request,
             nearby_devices,
             set_nearby_enabled,

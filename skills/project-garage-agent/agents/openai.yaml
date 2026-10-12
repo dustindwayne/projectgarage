@@ -1,0 +1,4 @@
+interface:
+  display_name: "Project Garage Agent"
+  short_description: "Manage your project cars through an external agent"
+  default_prompt: "Use $project-garage-agent to manage my requested garage records."

@@ -244,6 +244,34 @@ async fn read(State(app): State<App>, headers: HeaderMap) -> ApiResult {
     Ok(Json(snapshot(&db, &actor(&db, &headers)?)?))
 }
 #[derive(Deserialize)]
+struct AgentMutation {
+    protocol: String,
+    revision: i64,
+    actions: Value,
+}
+async fn agent_mutate(
+    State(app): State<App>,
+    headers: HeaderMap,
+    Json(input): Json<AgentMutation>,
+) -> ApiResult {
+    if input.protocol != "projectgarage-agent/1" {
+        return Err(bad("Unsupported agent changes protocol"));
+    }
+    let current = read(State(app.clone()), headers.clone()).await?.0;
+    let actions = garage_core::agent::normalize(&input.actions, &current).map_err(bad)?;
+    let action = serde_json::from_value(json!({"type":"batch","actions":actions}))
+        .map_err(|_| bad("Invalid agent action"))?;
+    mutate(
+        State(app),
+        headers,
+        Json(Mutation {
+            revision: input.revision,
+            action,
+        }),
+    )
+    .await
+}
+#[derive(Deserialize)]
 struct Mutation {
     revision: i64,
     action: Action,
@@ -342,6 +370,7 @@ fn router(app: App) -> Router {
         .route("/api/logout", post(logout))
         .route("/api/garage", get(read))
         .route("/api/action", post(mutate))
+        .route("/api/agent/action", post(agent_mutate))
         .route("/api/invite", post(invite))
         .route("/api/member/remove", post(remove_member))
         .layer(DefaultBodyLimit::max(24 * 1024 * 1024))
@@ -393,7 +422,7 @@ impl DeviceGarage {
             },
         })
     }
-    fn open_profile(&self, input: Option<Value>) -> ApiResult {
+    fn open_profile(&self, input: Option<Value>, rotate: bool) -> ApiResult {
         let mut db = self.app.db.lock().unwrap();
         let tx = db.transaction()?;
         let existing: Option<String> = tx
@@ -429,7 +458,9 @@ impl DeviceGarage {
             tx.execute("INSERT INTO device_profile VALUES(?)", [&uid])?;
             uid
         };
-        tx.execute("DELETE FROM sessions WHERE user_id=?", [&uid])?;
+        if rotate {
+            tx.execute("DELETE FROM sessions WHERE user_id=?", [&uid])?;
+        }
         let token = format!("{}{}", new_id(), new_id());
         tx.execute(
             "INSERT INTO sessions VALUES(?,?,?)",
@@ -442,10 +473,25 @@ impl DeviceGarage {
             json!({"token":token,"snapshot":snapshot(&db,&actor(&db,&headers)?)?}),
         ))
     }
+    /// A short-lived external-agent session never invalidates the running app's session.
+    pub async fn agent_call(&self, path: &str, data: Option<Value>) -> Value {
+        let opened = match self.open_profile(None, false) {
+            Ok(Json(value)) => value,
+            Err(ApiError(status, error)) => {
+                return json!({"status":status.as_u16(),"body":{"error":error}})
+            }
+        };
+        let Some(token) = opened["token"].as_str() else {
+            return json!({"status":400,"body":{"error":"Open Project Garage and enter your name first"}});
+        };
+        let result = self.call(path, token, data).await;
+        let _ = self.call("logout", token, Some(json!({}))).await;
+        result
+    }
     pub async fn call(&self, path: &str, token: &str, data: Option<Value>) -> Value {
         let result: ApiResult = async {
             if path == "device/open" {
-                return self.open_profile(data);
+                return self.open_profile(data, true);
             }
             let mut headers = HeaderMap::new();
             headers.insert(
@@ -460,6 +506,11 @@ impl DeviceGarage {
                     let input = serde_json::from_value(data.ok_or(bad("Missing change"))?)
                         .map_err(|_| bad("Invalid change"))?;
                     mutate(State(self.app.clone()), headers, Json(input)).await
+                }
+                "agent/action" => {
+                    let input = serde_json::from_value(data.ok_or(bad("Missing agent changes"))?)
+                        .map_err(|_| bad("Invalid agent changes"))?;
+                    agent_mutate(State(self.app.clone()), headers, Json(input)).await
                 }
                 "logout" => logout(State(self.app.clone()), headers).await,
                 "health" => Ok(Json(json!({"ok":true,"storage":"device"}))),
@@ -504,6 +555,36 @@ mod tests {
         let status = res.status();
         let body = res.into_body().collect().await.unwrap().to_bytes();
         (status, serde_json::from_slice(&body).unwrap())
+    }
+    #[tokio::test]
+    async fn agent_sessions_preserve_app_access_and_batches_reject_stale_or_invalid_changes() {
+        let path = std::env::temp_dir().join(format!("garage-agent-session-{}.db", new_id()));
+        let store = DeviceGarage::open(&path).unwrap();
+        let opened = store
+            .call("device/open", "", Some(json!({"name":"Test"})))
+            .await;
+        let token = opened["body"]["token"].as_str().unwrap();
+        assert_eq!(store.agent_call("garage", None).await["status"], 200);
+        assert_eq!(store.call("garage", token, None).await["status"], 200);
+        let change = json!({"protocol":"projectgarage-agent/1","revision":0,"actions":[{"type":"configure","name":"Agent updated","currency":"USD"}]});
+        assert_eq!(
+            store.agent_call("agent/action", Some(change.clone())).await["status"],
+            200
+        );
+        assert_eq!(
+            store.agent_call("agent/action", Some(change)).await["status"],
+            409
+        );
+        let invalid = json!({"protocol":"projectgarage-agent/1","revision":1,"actions":[{"type":"configure","name":"Must roll back","currency":"USD"},{"type":"delete_car","car_id":"missing"}]});
+        assert_eq!(
+            store.agent_call("agent/action", Some(invalid)).await["status"],
+            403
+        );
+        let read = store.call("garage", token, None).await;
+        assert_eq!(read["body"]["garage"]["name"], "Agent updated");
+        assert_eq!(read["body"]["revision"], 1);
+        drop(store);
+        let _ = std::fs::remove_file(path);
     }
     #[tokio::test]
     async fn device_garage_persists_without_a_server_or_account() {

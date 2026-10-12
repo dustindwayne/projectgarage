@@ -1,6 +1,6 @@
 [package]
 name = "project-garage"
-version = "0.3.3"
+version = "0.4.0"
 edition = "2021"
 [lib]
 name = "project_garage_lib"
@@ -8,6 +8,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 [dependencies]
+garage-core = { path = "../crates/garage-core" }
 tauri = { version = "2", features = [] }
 garage-server = { path = "../crates/garage-server" }
 serde_json = "1"

@@ -48,8 +48,9 @@ import logo from '../public/project-garage-logo.svg?raw';
 import './styles.css';
 import './mobile-theme.css';
 import './phone-first.css';
-import { AssistantProvider, AssistantSettings, AssistantPanel } from './assistant';
+import { AssistantProvider, AssistantPanel, useAssistantAccess } from './assistant';
 import { Spending } from './spending';
+import { AgentAccess } from './agent-access';
 
 const labels: Record<Status, string> = {
   needed: 'Needed',
@@ -80,6 +81,7 @@ function Brand() {
   );
 }
 function App() {
+  const { enabled: assistantEnabled } = useAssistantAccess();
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null),
     [loading, setLoading] = useState(true),
     [greeting, setGreeting] = useState(''),
@@ -96,6 +98,9 @@ function App() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'auto' });
   }, [page, selected]);
+  useEffect(() => {
+    if (!assistantEnabled && page === 'assistant') setPage('garage');
+  }, [assistantEnabled, page]);
   const snapRef = useRef(snapshot);
   snapRef.current = snapshot;
   const refreshing = useRef(false);
@@ -173,10 +178,12 @@ function App() {
       if (!isDeviceMode()) setOffline(true);
     };
     window.addEventListener('online', online);
+    window.addEventListener('focus', online);
     window.addEventListener('offline', off);
     return () => {
       clearInterval(interval);
       window.removeEventListener('online', online);
+      window.removeEventListener('focus', online);
       window.removeEventListener('offline', off);
     };
   }, []);
@@ -298,21 +305,23 @@ function App() {
             { id: 'assistant', icon: Wrench, label: 'AI assistant' },
             { id: 'purchases', icon: Receipt, label: 'Spending' },
             { id: 'settings', icon: Settings, label: 'Garage settings' },
-          ].map((n) => (
-            <button
-              key={n.id}
-              className={page === n.id ? 'active' : ''}
-              onClick={() => {
-                setPage(n.id);
-                setSelected('');
-                setSearch('');
-              }}
-            >
-              <n.icon size={19} />
-              {n.label}
-              {n.id === 'garage' && pending > 0 && <span className="count">{pending}</span>}
-            </button>
-          ))}
+          ]
+            .filter((n) => n.id !== 'assistant' || assistantEnabled)
+            .map((n) => (
+              <button
+                key={n.id}
+                className={page === n.id ? 'active' : ''}
+                onClick={() => {
+                  setPage(n.id);
+                  setSelected('');
+                  setSearch('');
+                }}
+              >
+                <n.icon size={19} />
+                {n.label}
+                {n.id === 'garage' && pending > 0 && <span className="count">{pending}</span>}
+              </button>
+            ))}
         </nav>
         <div className="sidebar-bottom">
           <div className="shop-note">
@@ -823,25 +832,30 @@ function App() {
           <span>Your build. Your pace.</span>
         </footer>
       </div>
-      <nav className="mobile-nav">
+      <nav
+        className="mobile-nav"
+        style={{ gridTemplateColumns: `repeat(${assistantEnabled ? 4 : 3},1fr)` }}
+      >
         {[
           { id: 'garage', icon: CarFront, label: 'Garage' },
           { id: 'assistant', icon: Wrench, label: 'Assistant' },
           { id: 'purchases', icon: Receipt, label: 'Spending' },
           { id: 'settings', icon: Settings, label: 'Settings' },
-        ].map((n) => (
-          <button
-            key={n.id}
-            className={page === n.id ? 'active' : ''}
-            onClick={() => {
-              setPage(n.id);
-              setSelected('');
-            }}
-          >
-            <n.icon size={21} />
-            <span>{n.label}</span>
-          </button>
-        ))}
+        ]
+          .filter((n) => n.id !== 'assistant' || assistantEnabled)
+          .map((n) => (
+            <button
+              key={n.id}
+              className={page === n.id ? 'active' : ''}
+              onClick={() => {
+                setPage(n.id);
+                setSelected('');
+              }}
+            >
+              <n.icon size={21} />
+              <span>{n.label}</span>
+            </button>
+          ))}
       </nav>
       {notice && (
         <div role="status" className="toast">
@@ -1410,7 +1424,13 @@ function SettingsPage({
           <ThemeControl />
           <AccentControl />
         </section>
-        <AssistantSettings />
+        <AgentAccess
+          snapshot={snapshot}
+          disabled={disabled}
+          onSnapshot={onSnapshot}
+          onNotice={onNotice}
+          onError={onError}
+        />
         <NearbyDevices />
         <UpdatesCard />
         <section className="settings-card">

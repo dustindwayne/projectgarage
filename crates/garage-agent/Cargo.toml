@@ -1,0 +1,10 @@
+[package]
+name = "garage-agent"
+version = "0.4.0"
+edition = "2021"
+[dependencies]
+garage-server = { path = "../garage-server" }
+serde_json = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+[dev-dependencies]
+uuid = { version = "1", features = ["v4"] }

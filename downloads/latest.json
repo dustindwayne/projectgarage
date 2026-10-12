@@ -1,16 +1,23 @@
 {
-  "version": "0.3.3",
-  "notes": "Balanced phone layout with centered branding, overview, and stats; comfortable spacing and consistent project cards.",
+  "version": "0.4.0",
+  "notes": "External-agent skill and direct desktop data bridge. Optional built-in AI stays out of main navigation unless enabled.",
   "platforms": {
     "android-aarch64": {
       "path": "downloads/project-garage-arm64-debug.apk",
-      "sha256": "fe33112e7cd5dfb57524820155eb863848623b72ae481a8d074e79c008a70a82",
-      "size": 29095777
+      "sha256": "dc7e2b9d9fd76a2015069f8b1b83b93c6abeac513bef8595040508343c8689b7",
+      "size": 29139509
     },
     "windows-x86_64": {
       "path": "downloads/project-garage-windows.exe",
-      "sha256": "8adb721942059c283976128eab7787d24d38a71fbdfc1cfb9e44265c9f109901",
-      "size": 14615552
+      "sha256": "bedc402303e92d451226abb5b3a6d5d5f5fd3f2fa26ba66056184081246f5170",
+      "size": 14704640
+    }
+  },
+  "tools": {
+    "agent_bridge": {
+      "path": "downloads/project-garage-agent.exe",
+      "sha256": "f13e464d7f7e5992a6c0a4d57163b246b5d8140e1bec679341822784432c8cdd",
+      "size": 3035648
     }
   }
 }

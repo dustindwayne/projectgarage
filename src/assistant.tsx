@@ -9,6 +9,8 @@ const names: Record<Provider, string> = {
   xai: 'Grok',
 };
 type Connection = {
+  enabled: boolean;
+  setEnabled: (enabled: boolean) => void;
   provider: Provider;
   model: string;
   key: string;
@@ -24,9 +26,16 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   });
   const [model, setM] = useState(() => localStorage.getItem('pg-ai-model') || '');
   const [key, setKey] = useState('');
+  const [enabled, setEnabled] = useState(localStorage.getItem('pg-assistant-enabled') === 'true');
   return (
     <ConnectionContext.Provider
       value={{
+        enabled,
+        setEnabled: (v) => {
+          setEnabled(v);
+          localStorage.setItem('pg-assistant-enabled', String(v));
+          if (!v) setKey('');
+        },
         provider,
         model,
         key,
@@ -96,19 +105,29 @@ function ConnectionFields() {
     </div>
   );
 }
+export function useAssistantAccess() {
+  return useContext(ConnectionContext)!;
+}
 export function AssistantSettings() {
+  const c = useAssistantAccess();
   return (
-    <section className="settings-card">
-      <h2>
-        <Sparkles size={19} />
-        AI assistant
-      </h2>
-      <p>
-        Give your assistant full control of your garage records, using your account’s owner or staff
-        permissions.
-      </p>
-      {native ? <ConnectionFields /> : <p>Connect AI in the installed Android or desktop app.</p>}
-    </section>
+    <div className="optional-assistant">
+      <label className="checkbox">
+        <input
+          type="checkbox"
+          checked={c.enabled}
+          onChange={(e) => c.setEnabled(e.target.checked)}
+        />
+        Show built-in AI assistant
+      </label>
+      <p>Optional. External agents use the skill without a provider key in this app.</p>
+      {c.enabled &&
+        (native ? (
+          <ConnectionFields />
+        ) : (
+          <p>Provider connections are available in installed apps.</p>
+        ))}
+    </div>
   );
 }
 export function AssistantPanel({

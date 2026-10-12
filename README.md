@@ -12,7 +12,7 @@ Android comes first, with a shared Rust foundation and a Tauri 2 app shell for W
 
 ## Build status
 
-The app includes on-device Rust/SQLite storage, personal welcome, parts and expense tracking, photo journal, System/Light/Dark themes, and optional shared-garage permissions. Seventeen Rust tests cover permissions, acquisition totals, saved-data compatibility, persistence, Android discovery, AI record patches, atomic batches, and update verification. This is an early development build, not a store-ready Android release. Physical-device testing remains to be done.
+The app includes on-device Rust/SQLite storage, personal welcome, parts and expense tracking, photo journal, System/Light/Dark themes, and optional shared-garage permissions. Nineteen Rust tests cover permissions, acquisition totals, saved-data compatibility, persistence, Android discovery, AI record patches, atomic batches, and update verification. This is an early development build, not a store-ready Android release. Physical-device testing remains to be done.
 
 **[Download the Android test APK](downloads/project-garage-arm64-debug.apk)** · [Build notes](downloads/README.md)
 
@@ -158,9 +158,9 @@ Phone navigation keeps **Garage**, **Assistant**, **Spending**, and **Settings**
 
 Under **Settings → Appearance**, choose a preset accent or a custom color. Theme and accent are remembered on this device. Spending defaults to all cars and can be filtered to one car. It separates initial car purchases from purchased parts and lists purchase dates, sellers, and saved receipts. Needed parts and pending suggestions do not count as money spent.
 
-## Garage AI assistant
+## Optional built-in AI assistant
 
-The installed Android and desktop apps connect directly to **OpenAI (ChatGPT models)**, **Anthropic Claude**, or **xAI Grok** over HTTPS. In Settings or Assistant, select your provider, enter a model ID available to your account, and supply its API key. Ordinary chat subscriptions are not API credentials; provider API usage is billed separately. Keys remain in frontend/native request memory and are never saved in settings, backups, SQLite, or the repository. Close the app or choose **Disconnect and forget key** to clear access.
+The installed Android and desktop apps connect directly to **OpenAI (ChatGPT models)**, **Anthropic Claude**, or **xAI Grok** over HTTPS. Enable **Show built-in AI assistant** under **Settings → Use your own agent (optional)**, then select your provider, enter a model ID available to your account, and supply its API key. Ordinary chat subscriptions are not API credentials; provider API usage is billed separately. Keys remain in frontend/native request memory and are never saved in settings, backups, SQLite, or the repository. Close the app or choose **Disconnect and forget key** to clear access.
 
 The assistant can answer garage questions and create, edit, delete, or update car and part records, approve suggestions, record purchases, and add or remove journal entries. Requested changes save automatically with **full control of records**, limited by the signed-in user's existing owner/staff permissions. It cannot manage member access, install updates, run shell commands, or change credentials. Garage text records are sent to the selected provider; photo and receipt binaries, journal authors, and member contact fields are omitted. Existing attachment files are preserved during partial edits. Text entered in notes is included, so avoid putting credentials in notes.
 
@@ -171,3 +171,13 @@ Provider request formats follow the [OpenAI Chat Completions API](https://develo
 The 0.3.2 branding update uses the supplied SVG wordmark and its open-hood car as the launcher icon. In-app logo colors follow your selected accent and theme. Dark mode uses black (#090909) and neutral charcoal (#181818 / #242424); accent colors do not tint its surfaces.
 
 After building and generating the manifest, run `scripts/publish-public-updates.ps1` to publish only the fixed installer/manifest allowlist to the public update repository. It does not copy the source checkout or garage data.
+
+## External agents without in-app AI setup
+
+The main app defaults to Garage, Spending, and Settings. The built-in Assistant tab appears only when you enable it; disabling it clears its provider key. Under **Settings → Use your own agent (optional)**, copy a prompt for the agent you already use. The [portable skill](skills/project-garage-agent/SKILL.md) ships in the public download repository as a ZIP and plain instructions. No provider account or key is required inside Project Garage for this route.
+
+On desktop, an agent with filesystem and command access uses the Rust `garage-agent` bridge to read and change the same local SQLite garage. The bridge validates partial patches through the app’s rules, checks the current revision, applies batches atomically, preserves receipt/photo fields, and leaves the app’s session signed in. It does not start a server or edit SQLite records directly. The published Windows bridge is downloaded and SHA-256 verified by the skill’s bootstrap script. macOS/Linux can build the same command bridge from this checkout.
+
+Android and cloud chats use a file handoff: **Share garage context** opens Android’s share chooser for a text-only context JSON file. Ask the agent for changes, then choose **Import agent changes** and apply them in Settings. This handoff is required because a pasted prompt does not give an external agent access to Android’s app sandbox. It is not automatic Wi-Fi synchronization. Context files exclude photo/receipt binaries and member contacts. The user chooses the receiving agent. Stale changes require a fresh context. Browser previews can export context files; installed apps include native sharing. Physical-phone sharing is not yet tested.
+
+Bridge examples: `garage-agent snapshot --output context.json`, `garage-agent apply --file changes.json --output result.json`, or `garage-agent init --name Kevin` to initialize a new local garage explicitly. Use `--db` only for a chosen existing database or an isolated test fixture. Read the skill’s action reference for the revisioned changes format.

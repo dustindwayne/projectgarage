@@ -356,3 +356,20 @@ mod tests {
         });
     }
 }
+
+pub async fn share_agent_context(
+    app: &tauri::AppHandle,
+    path: &std::path::Path,
+) -> Result<(), String> {
+    #[cfg(target_os = "android")]
+    app.state::<AndroidInstaller>()
+        .0
+        .run_mobile_plugin::<serde_json::Value>(
+            "shareContext",
+            serde_json::json!({"path":path.to_string_lossy()}),
+        )
+        .map_err(|e| e.to_string())?;
+    #[cfg(not(target_os = "android"))]
+    let _ = (app, path);
+    Ok(())
+}
