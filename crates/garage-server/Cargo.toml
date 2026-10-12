@@ -1,0 +1,18 @@
+[package]
+name = "garage-server"
+version = "0.1.0"
+edition = "2021"
+[dependencies]
+garage-core = { path = "../garage-core" }
+axum = "0.8"
+tokio = { version = "1", features = ["full"] }
+tower-http = { version = "0.6", features = ["cors", "fs", "trace"] }
+rusqlite = { version = "0.32", features = ["bundled"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+argon2 = "0.5"
+sha2 = "0.10"
+rand_core = { version = "0.6", features = ["getrandom"] }
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"

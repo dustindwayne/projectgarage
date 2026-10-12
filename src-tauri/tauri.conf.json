@@ -1,0 +1,6 @@
+{
+ "$schema":"https://schema.tauri.app/config/2", "productName":"Project Garage", "version":"0.1.0", "identifier":"com.projectgarage.app",
+ "build":{"beforeDevCommand":"npm run dev","devUrl":"http://localhost:1420","beforeBuildCommand":"npm run build","frontendDist":"../dist"},
+ "app":{"windows":[{"title":"Project Garage","width":1200,"height":820,"minWidth":360,"minHeight":640}],"security":{"csp":"default-src 'self'; connect-src 'self' ipc: http://ipc.localhost http://localhost:* http://127.0.0.1:* http://10.0.2.2:* https:; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'"}},
+ "bundle":{"active":true,"targets":"all","shortDescription":"Your cars. Your work. Your garage.","category":"Productivity","icon":["icons/icon.png","icons/icon.ico","icons/icon.icns"]}
+}
