@@ -1,23 +1,23 @@
 {
-  "version": "0.4.0",
-  "notes": "External-agent skill and direct desktop data bridge. Optional built-in AI stays out of main navigation unless enabled.",
+  "version": "0.5.0",
+  "notes": "On-device receipt scanning with review, price statistics, saved garage import, and phone-approved encrypted Wi-Fi transfers.",
   "platforms": {
     "android-aarch64": {
       "path": "downloads/project-garage-arm64-debug.apk",
-      "sha256": "dc7e2b9d9fd76a2015069f8b1b83b93c6abeac513bef8595040508343c8689b7",
-      "size": 29139509
+      "sha256": "ff44e06a31f347f6e77d3f998549c5dd57917184291bd00b5ec9d08613e4f145",
+      "size": 43463777
     },
     "windows-x86_64": {
       "path": "downloads/project-garage-windows.exe",
-      "sha256": "bedc402303e92d451226abb5b3a6d5d5f5fd3f2fa26ba66056184081246f5170",
-      "size": 14704640
+      "sha256": "ec21839bc57b3cba8e686ce76a3666e4e3697f640f2a76ebc2d87220e6a25e4d",
+      "size": 28653568
     }
   },
   "tools": {
     "agent_bridge": {
       "path": "downloads/project-garage-agent.exe",
-      "sha256": "f13e464d7f7e5992a6c0a4d57163b246b5d8140e1bec679341822784432c8cdd",
-      "size": 3035648
+      "sha256": "91171bff8c29704f565ee12a73886d4eab30d24a6bb52ed06005cd64d108ef7f",
+      "size": 3079168
     }
   }
 }

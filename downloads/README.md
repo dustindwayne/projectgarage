@@ -1,17 +1,15 @@
-# Android test build
+# Project Garage 0.5.0
 
-[Download Project Garage for Android (ARM64 debug APK)](project-garage-arm64-debug.apk)
+[Download Android APK](project-garage-arm64-debug.apk) · [Download Windows app](project-garage-windows.exe)
 
-[Download Project Garage for Windows](project-garage-windows.exe)
+This update adds on-device receipt-image text recognition with mandatory review, spending statistics and filters, CSV exports, saved-garage import, and encrypted phone-approved Wi-Fi imports to desktop. Android exports use the system share/save chooser.
 
-Version **0.2.0** enables **Settings → App updates**. Install this build once; later versions can be checked, downloaded, and installed from within the app. Android opens its system installer for confirmation. Private GitHub access needs a read-only token entered in the app; it is kept only for the current session.
+Install once, then use **Settings → App updates** for future downloads. Updates use the public installer repository without a GitHub account or token. Android opens the system installer for confirmation and checks the existing signing key. Source remains private.
 
-This is a signed development build for ARM64 Android devices, not a Play Store release. Install it, enter your name, and open your garage. Cars, parts, purchase records, receipts, and progress photos are stored directly on your device through Rust and SQLite. The personal garage works offline and requires no account, local server, computer, or server address.
+The Android ARM64 APK is a signed development build. Personal garage records stay in SQLite on your device; no account, local web server, or computer is required. Optional shared garages use a hosted HTTPS service.
 
-Sharing is optional. A shared garage uses a hosted HTTPS connection for owner/staff access across devices. The personal device garage stays separate and is not uploaded automatically.
+For Wi-Fi imports, open Settings on both devices, select the phone on desktop, verify the matching code, approve on the phone, and review the desktop import. Import adds missing records and preserves existing records. No continuous synchronization is included.
 
-This build adds System/Light/Dark themes, larger mobile controls, car source and initial purchase cost, and automatic desktop discovery of Android apps on the same Wi-Fi. Keep Android open and allow its local-network permission when prompted. Discovery does not transfer or merge garage records.
+Twenty-two Rust tests and receipt-parser checks pass. Receipt scanning was exercised with a synthetic receipt in the browser. Physical Android testing is still required, including share/save and Wi-Fi transfers.
 
-The browser interface has been exercised with car creation, purchase records, spending, completion, and photo journal uploads. Rust tests verify that device records, receipts, and journal photos survive reopening with no server running. Testing on a physical Android device remains to be done.
-
-To build locally on Windows, run `./scripts/build-android.ps1` from the repository root. Future test builds are also available as artifacts of the **Android APK** GitHub Actions workflow when that workflow succeeds.
+Build Android on Windows using scripts/build-android.ps1.

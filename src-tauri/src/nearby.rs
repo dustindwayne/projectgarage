@@ -30,7 +30,14 @@ pub struct Nearby {
     enabled: Arc<std::sync::atomic::AtomicBool>,
 }
 impl Nearby {
-    pub fn start(initially_enabled: bool) -> Self {
+    pub fn start(initially_enabled: bool, transfer: crate::transfer::Transfer) -> Self {
+        Self::start_on_port(initially_enabled, transfer, PORT)
+    }
+    fn start_on_port(
+        initially_enabled: bool,
+        transfer: crate::transfer::Transfer,
+        port: u16,
+    ) -> Self {
         let android = cfg!(target_os = "android");
         let state = Arc::new(Mutex::new(Snapshot {
             platform: if android { "android" } else { "desktop" }.into(),
@@ -45,9 +52,9 @@ impl Nearby {
         };
         std::thread::spawn(move || {
             let socket = match UdpSocket::bind(if android {
-                "0.0.0.0:0".into()
+                format!("0.0.0.0:{port}")
             } else {
-                format!("0.0.0.0:{PORT}")
+                format!("0.0.0.0:{port}")
             }) {
                 Ok(socket) => socket,
                 Err(e) => {
@@ -66,15 +73,25 @@ impl Nearby {
                     platform: "android".into(),
                 })
                 .unwrap();
+                let _ = socket.set_read_timeout(Some(Duration::from_millis(200)));
+                let mut last = Instant::now() - Duration::from_secs(3);
+                let mut request = [0u8; 2048];
                 loop {
-                    if enabled.load(std::sync::atomic::Ordering::Relaxed) {
+                    if let Ok((size, source)) = socket.recv_from(&mut request) {
+                        if enabled.load(std::sync::atomic::Ordering::Relaxed) {
+                            transfer.receive_request(&request[..size], source, &socket);
+                        }
+                    }
+                    if enabled.load(std::sync::atomic::Ordering::Relaxed)
+                        && last.elapsed() > Duration::from_secs(3)
+                    {
+                        last = Instant::now();
                         let error = socket
                             .send_to(&message, format!("255.255.255.255:{PORT}"))
                             .err()
                             .map(|e| format!("Could not announce on Wi-Fi: {e}"));
                         state.lock().unwrap().error = error;
                     }
-                    std::thread::sleep(Duration::from_secs(3));
                 }
             } else {
                 let _ = socket.set_read_timeout(Some(Duration::from_secs(1)));
@@ -159,7 +176,10 @@ mod tests {
     #[test]
     #[cfg(not(target_os = "android"))]
     fn desktop_detects_and_can_disable_an_android_announcement() {
-        let nearby = Nearby::start(true);
+        let reserve = UdpSocket::bind("127.0.0.1:0").unwrap();
+        let port = reserve.local_addr().unwrap().port();
+        drop(reserve);
+        let nearby = Nearby::start_on_port(true, crate::transfer::Transfer::default(), port);
         let socket = UdpSocket::bind("127.0.0.1:0").unwrap();
         let id = uuid::Uuid::new_v4().to_string();
         let message = serde_json::to_vec(&Beacon {
@@ -170,7 +190,7 @@ mod tests {
         .unwrap();
         let started = Instant::now();
         while started.elapsed() < Duration::from_secs(3) && nearby.snapshot().peers.is_empty() {
-            socket.send_to(&message, ("127.0.0.1", PORT)).unwrap();
+            socket.send_to(&message, ("127.0.0.1", port)).unwrap();
             std::thread::sleep(Duration::from_millis(100));
         }
         assert!(nearby.snapshot().peers.iter().any(|peer| peer.id == id));

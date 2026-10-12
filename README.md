@@ -12,7 +12,7 @@ Android comes first, with a shared Rust foundation and a Tauri 2 app shell for W
 
 ## Build status
 
-The app includes on-device Rust/SQLite storage, personal welcome, parts and expense tracking, photo journal, System/Light/Dark themes, and optional shared-garage permissions. Nineteen Rust tests cover permissions, acquisition totals, saved-data compatibility, persistence, Android discovery, AI record patches, atomic batches, and update verification. This is an early development build, not a store-ready Android release. Physical-device testing remains to be done.
+The app includes on-device Rust/SQLite storage, personal welcome, parts and expense tracking, photo journal, System/Light/Dark themes, and optional shared-garage permissions. Twenty-two Rust tests cover permissions, acquisition totals, saved-data compatibility, persistence, Android discovery, AI record patches, atomic batches, and update verification. This is an early development build, not a store-ready Android release. Physical-device testing remains to be done.
 
 **[Download the Android test APK](downloads/project-garage-arm64-debug.apk)** · [Build notes](downloads/README.md)
 
@@ -33,11 +33,25 @@ The app includes on-device Rust/SQLite storage, personal welcome, parts and expe
 - **Offline work:** add cars, edit parts, record purchases, and save progress photos with no internet connection.
 - **Optional shared access:** connect to a hosted garage to work with an owner and staff. Shared garages require a connection for changes and offer offline viewing of their saved copy.
 
+## Receipt scanning and purchase statistics
+
+Use **Scan receipt image** in a project or Spending. English text recognition runs on-device with the engine and language model bundled into the app; receipt photos are not uploaded. Review detected items, line prices, seller and date, then confirm selected items. Each item keeps the original receipt. Tax, shipping, discounts and receipt totals are excluded from suggested item rows to avoid double counting; check the selected sum against the receipt total. Staff scans become suggestions awaiting owner approval. Image receipts are supported; PDF text extraction is not included.
+
+Spending includes car acquisition and paid parts, with project/date filters, monthly totals, average part price, largest purchase, receipt counts, seller totals, searchable price-sorted history, and CSV export. Needed estimates and pending suggestions remain excluded. Undated purchases count in all-time totals but are excluded when filtering dates.
+
+## Import and phone transfer
+
+**Settings → Import saved garage** accepts a full garage JSON export with receipts and journal photos. Owners review the preview before importing. Import adds new projects and missing items/journal entries in matching projects; existing records retain their current values. Currency must match. Repeated imports do not duplicate records; invalid imports fail atomically.
+
+On desktop, choose **Import from phone** beside a discovered Android app. Open Settings on both devices, verify the matching eight-character code, approve on the phone, then review and confirm the desktop import. A temporary desktop connection receives an AES-GCM encrypted backup using a fresh X25519 session key. Android has no HTTP server or listening TCP server. Discovery uses UDP, and the phone connects outward to the desktop for the approved transfer. Sessions expire after 90 seconds; networks/firewalls can block them. This is a reviewed import, not ongoing synchronization. Physical-device Wi-Fi testing remains outstanding.
+
+Android backup and CSV export open the system share/save chooser.
+
 ## Nearby Android discovery
 
 Installed desktop apps automatically listen for Project Garage on the same Wi-Fi network. Keep the Android app open and check **Settings → Nearby Android apps** on desktop. Android announces only an app identifier; garage records, photos, and account details are not broadcast. Discovery can be disabled in settings, and the choice is remembered.
 
-Discovery uses UDP port 39073. Guest-network isolation or a firewall can prevent detection. On Android 17 and newer, allow the local-network permission when prompted. Discovery identifies devices; pairing, record transfer, and automatic synchronization are not implemented by this feature. Android still runs independently and does not host a local server.
+Discovery uses UDP port 39073. Guest-network isolation or a firewall can prevent detection. On Android 17 and newer, allow the local-network permission when prompted. Discovery identifies devices. The separate phone-approved import flow transfers records; automatic synchronization is not included. Android still runs independently and does not host a local server.
 
 ## In-app updates from GitHub
 
@@ -152,6 +166,7 @@ public/                 Project Garage branding
 ```
 
 Development takes place on **main**.
+
 ## Phone workflow and personalization (0.3.0)
 
 Phone navigation keeps **Garage**, **Assistant**, **Spending**, and **Settings** within thumb reach. Open a car to access its **Build journal**; journals are no longer a separate garage-wide destination. Phone forms fill the screen, and the desktop workspace expands at 960px.

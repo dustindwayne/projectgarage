@@ -48,10 +48,10 @@ class GarageUpdatesPlugin(private val activity: Activity): Plugin(activity) {
         try {
             val file=File(invoke.getArgs().getString("path")).canonicalFile
             val allowed=File(activity.cacheDir,"project-garage-agent-context.json").canonicalFile
-            if(file!=allowed||!file.isFile){invoke.reject("Invalid agent context file");return}
+            if((file!=allowed && file!=File(activity.cacheDir,"project-garage-backup.json").canonicalFile && file!=File(activity.cacheDir,"project-garage-purchases.csv").canonicalFile)||!file.isFile){invoke.reject("Invalid agent context file");return}
             val uri=FileProvider.getUriForFile(activity,activity.packageName+".fileprovider",file)
-            val send=Intent(Intent.ACTION_SEND).setType("application/json").putExtra(Intent.EXTRA_STREAM,uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            activity.startActivity(Intent.createChooser(send,"Share garage context with your agent"))
+            val send=Intent(Intent.ACTION_SEND).setType(if(file.name.endsWith(".csv")) "text/csv" else "application/json").putExtra(Intent.EXTRA_STREAM,uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            activity.startActivity(Intent.createChooser(send,if(file.name=="project-garage-backup.json") "Save or share garage backup" else "Share garage context with your agent"))
             invoke.resolve(JSObject().put("status","shared"))
         } catch(error:Exception){invoke.reject("Could not share garage context: "+error.message)}
     }

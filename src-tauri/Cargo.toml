@@ -1,6 +1,6 @@
 [package]
 name = "project-garage"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2021"
 [lib]
 name = "project_garage_lib"
@@ -17,3 +17,5 @@ uuid = { version = "1", features = ["v4"] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 sha2 = "0.10"
 semver = "1"
+x25519-dalek = { version = "2", features = ["static_secrets", "getrandom"] }
+aes-gcm = "0.10"

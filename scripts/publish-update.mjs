@@ -39,7 +39,7 @@ writeFileSync(
     {
       version,
       notes:
-        'External-agent skill and direct desktop data bridge. Optional built-in AI stays out of main navigation unless enabled.',
+        'On-device receipt scanning with review, price statistics, saved garage import, and phone-approved encrypted Wi-Fi transfers.',
       platforms,
       tools,
     },

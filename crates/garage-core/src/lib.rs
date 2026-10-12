@@ -89,6 +89,31 @@ impl Garage {
                 }
                 *self = next;
             }
+            Action::ImportGarage { garage } => {
+                require_owner(owner)?;
+                if garage.currency != self.currency {
+                    return Err("Import currency must match your garage currency".into());
+                }
+                let validated = validate_import(garage)?;
+                let mut next = self.clone();
+                for car in validated.cars {
+                    if let Some(existing) = next.cars.iter_mut().find(|c| c.id == car.id) {
+                        for item in car.items {
+                            if !existing.items.iter().any(|i| i.id == item.id) {
+                                existing.items.push(item)
+                            }
+                        }
+                        for entry in car.journal {
+                            if !existing.journal.iter().any(|e| e.id == entry.id) {
+                                existing.journal.push(entry)
+                            }
+                        }
+                    } else {
+                        next.cars.push(car);
+                    }
+                }
+                *self = next;
+            }
             Action::Configure { name, currency } => {
                 require_owner(owner)?;
                 valid_name(&name)?;
@@ -319,6 +344,9 @@ pub fn progress(car: &Car) -> (usize, usize) {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Action {
+    ImportGarage {
+        garage: Garage,
+    },
     Batch {
         actions: Vec<Action>,
     },
@@ -466,6 +494,101 @@ mod tests {
         assert_eq!(progress(&g.cars[0]), (1, 1));
     }
     #[test]
+    fn import_is_atomic_owner_only_and_preserves_media_without_duplicates() {
+        let mut garage = Garage::new("Owner");
+        let mut source = Garage::new("Phone");
+        let mut c = car();
+        c.id = "original-car".into();
+        c.cover = "data:image/jpeg;base64,AAAA".into();
+        c.acquired_from = "Auction".into();
+        c.purchase_price_cents = Some(120000);
+        let mut part = item();
+        part.id = "original-item".into();
+        part.status = Status::Purchased;
+        part.receipt = "data:image/png;base64,AAAA".into();
+        c.items.push(part);
+        c.journal.push(Entry {
+            id: "original-entry".into(),
+            date: "2026-10-12".into(),
+            title: "Start".into(),
+            notes: "First day".into(),
+            photos: vec!["data:image/jpeg;base64,AAAA".into()],
+            author: "Original owner".into(),
+        });
+        source.cars.push(c);
+        let before = serde_json::to_string(&garage).unwrap();
+        assert!(garage
+            .apply(
+                &Role::Staff,
+                "staff",
+                Action::ImportGarage {
+                    garage: source.clone()
+                }
+            )
+            .is_err());
+        assert_eq!(before, serde_json::to_string(&garage).unwrap());
+        garage
+            .apply(
+                &Role::Owner,
+                "owner",
+                Action::ImportGarage {
+                    garage: source.clone(),
+                },
+            )
+            .unwrap();
+        assert_eq!(
+            serde_json::to_string(&garage.cars).unwrap(),
+            serde_json::to_string(&source.cars).unwrap()
+        );
+        garage
+            .apply(
+                &Role::Owner,
+                "owner",
+                Action::ImportGarage {
+                    garage: source.clone(),
+                },
+            )
+            .unwrap();
+        assert_eq!(garage.cars.len(), 1);
+        garage.cars[0].name = "Newer desktop name".into();
+        garage.cars[0].items[0].price_cents = 20000;
+        let mut additional = item();
+        additional.id = "new-phone-item".into();
+        source.cars[0].items.push(additional);
+        garage
+            .apply(
+                &Role::Owner,
+                "owner",
+                Action::ImportGarage {
+                    garage: source.clone(),
+                },
+            )
+            .unwrap();
+        assert_eq!(garage.cars[0].items.len(), 2);
+        assert_eq!(garage.cars[0].items[0].price_cents, 20000);
+        assert_eq!(garage.cars[0].name, "Newer desktop name");
+        assert_eq!(garage.cars[0].journal[0].author, "Original owner");
+        let before = serde_json::to_string(&garage).unwrap();
+        source.cars[0].name = String::new();
+        assert!(garage
+            .apply(
+                &Role::Owner,
+                "owner",
+                Action::ImportGarage { garage: source }
+            )
+            .is_err());
+        assert_eq!(before, serde_json::to_string(&garage).unwrap());
+        let mut wrong = Garage::new("Other");
+        wrong.currency = "EUR".into();
+        assert!(garage
+            .apply(
+                &Role::Owner,
+                "owner",
+                Action::ImportGarage { garage: wrong }
+            )
+            .is_err());
+    }
+    #[test]
     fn needed_prices_do_not_count_as_spent() {
         let mut c = car();
         c.items.push(item());
@@ -548,4 +671,51 @@ mod tests {
         assert_eq!(progress(&g.cars[0]), (1, 1));
         assert_eq!(spending(&g.cars[0]), 0);
     }
+}
+
+fn validate_import(garage: Garage) -> Result<Garage, String> {
+    let mut probe = Garage::new("Import");
+    probe.apply(
+        &Role::Owner,
+        "import",
+        Action::Configure {
+            name: garage.name.clone(),
+            currency: garage.currency.clone(),
+        },
+    )?;
+    let mut ids = std::collections::HashSet::new();
+    for car in &garage.cars {
+        probe.cars.clear();
+        for id in std::iter::once(&car.id)
+            .chain(car.items.iter().map(|i| &i.id))
+            .chain(car.journal.iter().map(|e| &e.id))
+        {
+            if id.is_empty() || id.len() > 160 || !ids.insert(id.clone()) {
+                return Err("Backup contains missing or duplicate record identifiers".into());
+            }
+        }
+        probe.apply(&Role::Owner, "import", Action::SaveCar { car: car.clone() })?;
+        let id = probe.cars.last().unwrap().id.clone();
+        for item in &car.items {
+            probe.apply(
+                &Role::Owner,
+                "import",
+                Action::SaveItem {
+                    car_id: id.clone(),
+                    item: item.clone(),
+                },
+            )?;
+        }
+        for entry in &car.journal {
+            probe.apply(
+                &Role::Owner,
+                "import",
+                Action::AddEntry {
+                    car_id: id.clone(),
+                    entry: entry.clone(),
+                },
+            )?;
+        }
+    }
+    Ok(garage)
 }

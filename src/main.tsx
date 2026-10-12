@@ -50,7 +50,9 @@ import './mobile-theme.css';
 import './phone-first.css';
 import { AssistantProvider, AssistantPanel, useAssistantAccess } from './assistant';
 import { Spending } from './spending';
+import { ReceiptScan } from './receipt-scan';
 import { AgentAccess } from './agent-access';
+import { GarageImport } from './garage-import';
 
 const labels: Record<Status, string> = {
   needed: 'Needed',
@@ -639,6 +641,14 @@ function App() {
                       {owner ? 'Add part or work' : 'Suggest part or work'}
                     </button>
                   </div>
+                  <ReceiptScan
+                    key={car.id}
+                    cars={[car]}
+                    carId={car.id}
+                    owner={owner}
+                    disabled={disabled}
+                    onSave={mutate}
+                  />
                   <div className="item-list">
                     {car.items
                       .filter((i) => !i.pending && (filter === 'all' || i.status === filter))
@@ -792,13 +802,17 @@ function App() {
             </>
           )}
           {page === 'purchases' && (
-            <Spending
-              cars={garage.cars}
-              currency={garage.currency}
-              onCar={showCar}
-              onEdit={(carId, item) => setModal({ type: 'item', carId, item })}
-              disabled={disabled}
-            />
+            <>
+              <Spending
+                owner={owner}
+                onSave={mutate}
+                cars={garage.cars}
+                currency={garage.currency}
+                onCar={showCar}
+                onEdit={(carId, item) => setModal({ type: 'item', carId, item })}
+                disabled={disabled}
+              />
+            </>
           )}
           {page === 'assistant' && (
             <AssistantPanel snapshot={snapshot} disabled={disabled} mutate={mutate} />
@@ -1431,7 +1445,7 @@ function SettingsPage({
           onNotice={onNotice}
           onError={onError}
         />
-        <NearbyDevices />
+        <NearbyDevices snapshot={snapshot} disabled={disabled} onImport={mutate} />
         <UpdatesCard />
         <section className="settings-card">
           <h2>
@@ -1583,10 +1597,10 @@ function SettingsPage({
             Export garage backup
           </button>
           <small className="settings-help">
-            Keep a copy somewhere safe. Importing an exported garage is not yet available in the
-            app.
+            Keep a copy somewhere safe. Import a saved export below.
           </small>
         </section>
+        <GarageImport snapshot={snapshot} disabled={disabled} onImport={mutate} />
         <section className="settings-card">
           <h2>
             <WifiOff size={19} />
