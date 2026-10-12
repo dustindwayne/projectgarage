@@ -1,7 +1,12 @@
 import type { Snapshot } from './types';
-const native = '__TAURI_INTERNALS__' in window;
-export const getServer = () =>
-  localStorage.getItem('pg-server') || (native ? 'http://127.0.0.1:3030' : '');
+export const native = '__TAURI_INTERNALS__' in window;
+export const getServer = () => {
+  const value = localStorage.getItem('pg-server') || '';
+  // Older builds defaulted to a developer server. Native apps now use their own database.
+  if (native && /^http:\/\/(localhost|127\.0\.0\.1|10\.0\.2\.2)(:|\/|$)/.test(value)) return '';
+  return value;
+};
+export const isDeviceMode = () => native && !getServer();
 export function setServer(value: string) {
   const v = value.trim().replace(/\/$/, '');
   if (v) {
@@ -26,6 +31,20 @@ export class ApiError extends Error {
   }
 }
 export async function api<T>(path: string, data?: unknown): Promise<T> {
+  if (isDeviceMode()) {
+    const { invoke } = await import('@tauri-apps/api/core');
+    const result = await invoke<{ status: number; body: T & { error?: string } }>(
+      'device_request',
+      {
+        path,
+        token: getToken(),
+        data: data ?? null,
+      },
+    );
+    if (result.status >= 400)
+      throw new ApiError(result.body.error || 'Could not save on this device', result.status);
+    return result.body;
+  }
   const response = await fetch(`${getServer()}/api/${path}`, {
     method: data === undefined ? 'GET' : 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },

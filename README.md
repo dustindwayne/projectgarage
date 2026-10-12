@@ -6,11 +6,13 @@
 
 Project Garage is a personal project-car tracker built around the work that gets your car finished. Keep a record of the parts you need, what you've bought, what you've spent, and how your build looks along the way.
 
-Android comes first, with a shared Rust foundation and a Tauri 2 app shell for Windows, macOS, and Linux. The interface uses React and TypeScript. The shared-garage service and permission rules run in Rust.
+Android comes first, with a shared Rust foundation and a Tauri 2 app shell for Windows, macOS, and Linux. The interface uses React and TypeScript. Rust handles the garage rules and SQLite storage directly inside the installed app.
+
+**The Android app runs independently.** Enter your name and start your garage. Cars, parts, expenses, receipts, and journal photos are saved on the device, and you can make changes offline. No local server, computer, account, or server address is required for your personal garage. Optional hosted sharing connects owners and staff across devices.
 
 ## Build status
 
-The first working version includes the responsive interface, Rust core, SQLite service, account flow, shared-garage permissions, and cross-platform shell. The Android ARM64 debug APK, interface, and native Windows executable build successfully, and all six Rust permission and service tests pass. This is an early development build, not a store-ready Android release. Physical-device testing remains to be done.
+The first working version includes the responsive interface, on-device Rust/SQLite storage, personal welcome, parts and expense tracking, photo journal, and optional shared-garage permissions. Seven Rust tests cover permission rules, hosted sharing, and reopening device data without any running server. This is an early development build, not a store-ready Android release. Physical-device testing remains to be done.
 
 **[Download the Android test APK](downloads/project-garage-arm64-debug.apk)** · [Build notes](downloads/README.md)
 
@@ -24,10 +26,11 @@ The first working version includes the responsive interface, Rust core, SQLite s
 - **Required jobs:** track wiring, paint, alignment, and other work alongside parts.
 - **Dated build journal:** notes and photos show how the project came along.
 - **Automatic completion:** a project is complete when every approved, required item is done. Optional items and unapproved suggestions do not count.
-- **Shared access:** an owner and staff work in the same garage.
-- **Offline viewing:** read the most recently saved garage without a connection. Changes require the service to be reachable.
+- **Standalone personal garage:** open the installed app and enter your name; everything is stored on your device.
+- **Offline work:** add cars, edit parts, record purchases, and save progress photos with no internet connection.
+- **Optional shared access:** connect to a hosted garage to work with an owner and staff. Shared garages require a connection for changes and offer offline viewing of their saved copy.
 
-## Owner and staff access
+## Optional shared garages: owner and staff access
 
 | Action                                      | Owner | Staff                 |
 | ------------------------------------------- | ----- | --------------------- |
@@ -43,7 +46,7 @@ The first working version includes the responsive interface, Rust core, SQLite s
 
 Staff invitations expire after seven days and can be used once. Account passwords are hashed with Argon2. The Rust service checks permissions for every change, and revision checks prevent one person's update from silently overwriting another's.
 
-## Local development
+## Development setup
 
 Install a current Rust toolchain and Node.js LTS. On Windows, Rust compilation also needs the Microsoft C++ Build Tools. Native platform prerequisites are described in [Tauri's documentation](https://v2.tauri.app/start/prerequisites/).
 
@@ -53,7 +56,7 @@ cd projectgarage
 npm install
 ```
 
-Start the Rust service in one terminal:
+For the browser preview and optional shared-service development, start the Rust service in one terminal:
 
 ```sh
 cargo run -p garage-server
@@ -69,7 +72,7 @@ Open `http://localhost:1420`. Create an owner account to start your garage. Invi
 
 ## Native apps
 
-Keep the garage service running, then start the desktop app:
+Start the desktop app. It stores your garage directly in its own SQLite database; no garage service is needed:
 
 ```sh
 npm run tauri dev
@@ -92,9 +95,9 @@ npm run tauri android build -- --apk
 
 On Windows, `./scripts/build-android.ps1` builds an ARM64 debug APK and copies it to `artifacts/project-garage-arm64-debug.apk`. It uses Android Studio's Java runtime and includes a file-copy fallback for machines that do not permit symbolic links. The **Android APK** GitHub Actions workflow also builds a downloadable test APK on pushes to `main`.
 
-Native clients connect to the same garage service. Use an HTTPS service address for real devices and shared garages. `localhost` on a phone points to that phone, not your computer. The Android emulator can reach the host computer at `10.0.2.2`; HTTP emulator access is for development only.
+The installed Android and desktop apps call Rust directly and store their personal garage in the app's private data directory. They do not start a local HTTP server or listen on a port. If you choose to join a shared garage, use its hosted HTTPS address. Device garages and hosted garages remain separate; local records are not uploaded automatically.
 
-## Service configuration
+## Optional hosted service configuration
 
 | Variable         | Default                             | Purpose                                |
 | ---------------- | ----------------------------------- | -------------------------------------- |
@@ -117,9 +120,9 @@ npm run build
 
 ```text
 crates/garage-core/      Car, part, journal, and permission rules
-crates/garage-server/    Rust HTTP service, accounts, sharing, SQLite
+crates/garage-server/    Shared Rust storage library and optional hosted service
 src/                    Responsive app interface
-src-tauri/              Android and desktop app shell
+src-tauri/              Native app, direct Rust commands, private device database
 public/                 Project Garage branding
 ```
 

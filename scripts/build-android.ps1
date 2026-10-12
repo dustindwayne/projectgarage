@@ -26,6 +26,11 @@ if ($LASTEXITCODE -ne 0) {
     $taskStrip = Join-Path $env:NDK_HOME 'toolchains\llvm\prebuilt\windows-x86_64\bin\llvm-strip.exe'
     & $taskStrip --strip-unneeded (Join-Path $taskJni 'libproject_garage_lib.so')
     if ($LASTEXITCODE -ne 0) { throw 'Could not remove native debug-symbol bulk.' }
+    $taskApkOutput = Join-Path $taskRoot 'src-tauri\gen\android\app\build\outputs\apk\arm64\debug'
+    if (Test-Path -LiteralPath $taskApkOutput) {
+        # Remove only generated APK files so incremental ZIP padding does not bloat the download.
+        Get-ChildItem -LiteralPath $taskApkOutput -Filter '*.apk' | ForEach-Object { Remove-Item -LiteralPath $_.FullName }
+    }
     Push-Location 'src-tauri\gen\android'
     try {
         .\gradlew.bat assembleArm64Debug -x rustBuildArm64Debug --no-daemon

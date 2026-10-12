@@ -2,8 +2,10 @@
 
 [Download Project Garage for Android (ARM64 debug APK)](project-garage-arm64-debug.apk)
 
-This is a signed development build for ARM64 Android devices, not a Play Store release. The app includes the garage interface and connects to the Rust garage service for accounts, sharing, and updates. Set your service address under **Garage connection** on the welcome screen. Use HTTPS for a shared installation. Service hosting is not included with the APK.
+This is a signed development build for ARM64 Android devices, not a Play Store release. Install it, enter your name, and open your garage. Cars, parts, purchase records, receipts, and progress photos are stored directly on your device through Rust and SQLite. The personal garage works offline and requires no account, local server, computer, or server address.
 
-The browser interface has been exercised with car creation, purchase records, spending, completion, and photo journal uploads. The APK has been built and its signature checked; testing on a physical Android device remains to be done.
+Sharing is optional. A shared garage uses a hosted HTTPS connection for owner/staff access across devices. The personal device garage stays separate and is not uploaded automatically.
+
+The browser interface has been exercised with car creation, purchase records, spending, completion, and photo journal uploads. Rust tests verify that device records, receipts, and journal photos survive reopening with no server running. Testing on a physical Android device remains to be done.
 
 To build locally on Windows, run `./scripts/build-android.ps1` from the repository root. Future test builds are also available as artifacts of the **Android APK** GitHub Actions workflow when that workflow succeeds.

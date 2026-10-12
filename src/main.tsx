@@ -36,6 +36,8 @@ import {
   clearSession,
   imageFile,
   receiptFile,
+  isDeviceMode,
+  native,
 } from './api';
 import { emptyCar, emptyItem, progress, spent, today } from './types';
 import type { Car, Item, Entry, Snapshot, Status } from './types';
@@ -65,7 +67,7 @@ function App() {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null),
     [loading, setLoading] = useState(true),
     [greeting, setGreeting] = useState(''),
-    [offline, setOffline] = useState(!navigator.onLine),
+    [offline, setOffline] = useState(!isDeviceMode() && !navigator.onLine),
     [busy, setBusy] = useState(false),
     [notice, setNotice] = useState(''),
     [error, setError] = useState(''),
@@ -81,6 +83,10 @@ function App() {
   async function accept(value: Snapshot) {
     setSnapshot(value);
     setOffline(false);
+    if (isDeviceMode()) {
+      localStorage.setItem('pg-user', value.user.id);
+      return;
+    }
     try {
       await cache(value);
     } catch {
@@ -90,12 +96,22 @@ function App() {
     }
   }
   async function refresh(initial = false) {
-    if (!getToken() || refreshing.current) {
+    if ((!getToken() && !(initial && isDeviceMode())) || refreshing.current) {
       if (initial) setLoading(false);
       return;
     }
     refreshing.current = true;
     try {
+      if (initial && isDeviceMode()) {
+        const result = await api<{ token?: string; snapshot?: Snapshot }>('device/open');
+        if (result.token && result.snapshot) {
+          localStorage.setItem('pg-token', result.token);
+          await accept(result.snapshot);
+          setGreeting(`Opening ${result.snapshot.user.name}'s Project Garage`);
+          setTimeout(() => setGreeting(''), 1600);
+        }
+        return;
+      }
       const value = await api<Snapshot>('garage');
       await accept(value);
       if (initial) {
@@ -110,7 +126,8 @@ function App() {
       } else if (e instanceof ApiError) {
         setError(e.message);
       } else {
-        setOffline(true);
+        if (!isDeviceMode()) setOffline(true);
+        else setError(e instanceof Error ? e.message : 'Could not open the device database');
         if (initial) {
           const saved = await cached().catch(() => null);
           setSnapshot(saved);
@@ -133,7 +150,9 @@ function App() {
     const online = () => {
       void refresh();
     };
-    const off = () => setOffline(true);
+    const off = () => {
+      if (!isDeviceMode()) setOffline(true);
+    };
     window.addEventListener('online', online);
     window.addEventListener('offline', off);
     return () => {
@@ -149,7 +168,7 @@ function App() {
     }
   }, [notice]);
   async function mutate(action: unknown) {
-    if (offline)
+    if (offline && !isDeviceMode())
       throw new Error('Reconnect to make changes. Your saved garage is available to view.');
     setBusy(true);
     setError('');
@@ -159,7 +178,7 @@ function App() {
       setNotice('Garage updated');
     } catch (e) {
       if (e instanceof ApiError && e.status === 409) await refresh();
-      if (!(e instanceof ApiError)) setOffline(true);
+      if (!(e instanceof ApiError) && !isDeviceMode()) setOffline(true);
       setError(e instanceof Error ? e.message : 'Could not save');
       throw e;
     } finally {
@@ -176,6 +195,33 @@ function App() {
     setPage('garage');
     setError('');
   }
+  async function connectShared(address: string) {
+    if (!address.trim()) throw new Error('Enter the HTTPS address of your shared garage');
+    const url = new URL(address);
+    if (url.protocol !== 'https:') throw new Error('Shared garages use an HTTPS connection');
+    await clearSession();
+    setServer(address);
+    setSnapshot(null);
+    setOffline(false);
+    setError('');
+    setSelected('');
+    setPage('garage');
+  }
+  async function useDeviceGarage() {
+    await clearSession();
+    setServer('');
+    setSnapshot(null);
+    setError('');
+    setLoading(true);
+    await refresh(true);
+  }
+  async function opened(value: Snapshot, token: string) {
+    localStorage.setItem('pg-token', token);
+    await accept(value);
+    setError('');
+    setGreeting(`Opening ${value.user.name}'s Project Garage`);
+    setTimeout(() => setGreeting(''), 1600);
+  }
   if (loading || greeting)
     return (
       <div className="splash">
@@ -186,22 +232,15 @@ function App() {
       </div>
     );
   if (!snapshot)
-    return (
-      <Auth
-        onSuccess={async (value, token) => {
-          localStorage.setItem('pg-token', token);
-          await accept(value);
-          setError('');
-          setGreeting(`Opening ${value.user.name}'s Project Garage`);
-          setTimeout(() => setGreeting(''), 1600);
-        }}
-        initialError={error}
-      />
+    return isDeviceMode() ? (
+      <DeviceWelcome onSuccess={opened} onConnect={connectShared} initialError={error} />
+    ) : (
+      <Auth onSuccess={opened} onUseDevice={useDeviceGarage} initialError={error} />
     );
   const { garage, user, members } = snapshot,
     owner = user.role === 'owner',
     car = garage.cars.find((c) => c.id === selected),
-    disabled = offline || busy;
+    disabled = (!isDeviceMode() && offline) || busy;
   const money = (cents: number) =>
     new Intl.NumberFormat(undefined, { style: 'currency', currency: garage.currency }).format(
       cents / 100,
@@ -262,11 +301,14 @@ function App() {
               <strong>Make it yours.</strong>
             </p>
           </div>
-          <button className="user-button" onClick={() => void signOut()}>
+          <button
+            className="user-button"
+            onClick={() => (isDeviceMode() ? setPage('settings') : void signOut())}
+          >
             <span className="avatar small">{user.name.slice(0, 1)}</span>
             <span>
               {user.name}
-              <small>Sign out</small>
+              <small>{isDeviceMode() ? 'On this device' : 'Sign out'}</small>
             </span>
             <LogOut size={17} />
           </button>
@@ -280,7 +322,11 @@ function App() {
           <div>
             <span className={`connection ${offline ? 'off' : ''}`}>
               {offline ? <WifiOff size={14} /> : <span className="live-dot" />}
-              {offline ? 'Offline · viewing saved copy' : 'Garage connected'}
+              {isDeviceMode()
+                ? 'Saved on this device'
+                : offline
+                  ? 'Offline · viewing saved copy'
+                  : 'Shared garage connected'}
             </span>
             <button
               className="icon-button"
@@ -773,6 +819,8 @@ function App() {
               onError={setError}
               onNotice={setNotice}
               onSignOut={signOut}
+              onConnect={connectShared}
+              onUseDevice={useDeviceGarage}
               onRemove={(member) =>
                 confirm(
                   'Remove staff access?',
@@ -1033,12 +1081,128 @@ function Journal({
     </div>
   );
 }
+function DeviceWelcome({
+  onSuccess,
+  onConnect,
+  initialError,
+}: {
+  onSuccess: (snapshot: Snapshot, token: string) => Promise<void>;
+  onConnect: (address: string) => Promise<void>;
+  initialError: string;
+}) {
+  const [name, setName] = useState(''),
+    [address, setAddress] = useState(''),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState(initialError);
+  return (
+    <div className="auth">
+      <section className="auth-story">
+        <Brand />
+        <div>
+          <p className="eyebrow">FOR THE ONES WHO BUILD</p>
+          <h1>
+            More than a car.
+            <br />A project that's
+            <br />
+            <em>yours.</em>
+          </h1>
+          <p>
+            The parts. The late nights. The first drive.
+            <br />
+            Keep your whole build together.
+          </p>
+        </div>
+        <small>YOUR CARS. YOUR WORK. YOUR GARAGE.</small>
+      </section>
+      <section className="auth-form">
+        <div>
+          <p className="eyebrow">WELCOME TO PROJECT GARAGE</p>
+          <h2>Make yourself at home.</h2>
+          <p>
+            Your cars and build records live right here on your device. No account or internet
+            connection needed.
+          </p>
+          <form
+            style={{ marginTop: 30 }}
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setBusy(true);
+              setError('');
+              try {
+                const result = await api<{ token: string; snapshot: Snapshot }>('device/open', {
+                  name,
+                });
+                await onSuccess(result.snapshot, result.token);
+              } catch (e) {
+                setError(e instanceof Error ? e.message : String(e));
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            <Field label="Your name">
+              <input
+                required
+                maxLength={80}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                autoComplete="given-name"
+                placeholder="Kevin"
+              />
+            </Field>
+            {error && (
+              <p className="form-error" role="alert">
+                {error}
+              </p>
+            )}
+            <button className="primary wide" disabled={busy}>
+              {busy ? 'Opening the door…' : 'Open my garage'}
+              <ArrowUpRight size={18} />
+            </button>
+          </form>
+          <small className="auth-note">
+            Parts, purchases, receipts, and photos. Always with you.
+          </small>
+          <details className="connection-settings">
+            <summary>Join a shared garage instead</summary>
+            <Field
+              label="Shared garage address"
+              hint="Optional. Use your garage’s hosted HTTPS connection."
+            >
+              <input
+                type="url"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="https://garage.example.com"
+              />
+            </Field>
+            <button
+              className="secondary wide"
+              disabled={busy || !address.trim()}
+              onClick={async () => {
+                try {
+                  await onConnect(address);
+                } catch (e) {
+                  setError(e instanceof Error ? e.message : String(e));
+                }
+              }}
+            >
+              Connect to shared garage
+            </button>
+          </details>
+        </div>
+      </section>
+    </div>
+  );
+}
 function Auth({
   onSuccess,
   initialError,
+  onUseDevice,
 }: {
   onSuccess: (s: Snapshot, t: string) => Promise<void>;
   initialError: string;
+  onUseDevice: () => Promise<void>;
 }) {
   const [mode, setMode] = useState<'register' | 'login'>('register'),
     [name, setName] = useState(''),
@@ -1155,8 +1319,8 @@ function Auth({
                 />
               </Field>
             )}
-            <details className="connection-settings" open={'__TAURI_INTERNALS__' in window}>
-              <summary>Garage connection</summary>
+            <details className="connection-settings">
+              <summary>Shared garage connection</summary>
               <Field
                 label="Garage server"
                 hint="Use your shared garage’s HTTPS address. Leave blank in the browser for this server."
@@ -1180,6 +1344,15 @@ function Auth({
             </button>
           </form>
           <small className="auth-note">A place for your project. At your own pace.</small>
+          {native && (
+            <button
+              className="text-link"
+              style={{ marginTop: 20 }}
+              onClick={() => void onUseDevice()}
+            >
+              Use my device’s garage instead
+            </button>
+          )}
         </div>
       </section>
     </div>
@@ -1211,6 +1384,8 @@ function SettingsPage({
   onNotice,
   onRemove,
   onSignOut,
+  onConnect,
+  onUseDevice,
 }: {
   snapshot: Snapshot;
   disabled: boolean;
@@ -1221,10 +1396,13 @@ function SettingsPage({
   onNotice: (s: string) => void;
   onRemove: (member: Snapshot['user']) => void;
   onSignOut: () => Promise<void>;
+  onConnect: (address: string) => Promise<void>;
+  onUseDevice: () => Promise<void>;
 }) {
   const [name, setName] = useState(snapshot.garage.name),
     [currency, setCurrency] = useState(snapshot.garage.currency),
     [code, setCode] = useState(''),
+    [address, setAddress] = useState(''),
     [inviting, setInviting] = useState(false);
   const owner = snapshot.user.role === 'owner';
   return (
@@ -1292,7 +1470,7 @@ function SettingsPage({
               <span className="avatar small">{m.name.slice(0, 1)}</span>
               <div>
                 <strong>{m.name}</strong>
-                <small>{m.email}</small>
+                <small>{isDeviceMode() ? 'Device profile' : m.email}</small>
               </div>
               <span className="pill neutral">{m.role}</span>
               {owner && m.role === 'staff' && (
@@ -1307,7 +1485,7 @@ function SettingsPage({
               )}
             </div>
           ))}
-          {owner && (
+          {owner && !isDeviceMode() && (
             <>
               <button
                 className="secondary"
@@ -1389,27 +1567,81 @@ function SettingsPage({
             Export garage backup
           </button>
           <small className="settings-help">
-            Exports are for your records. Restore currently requires a database backup on the
-            server.
+            Keep a copy somewhere safe. Importing an exported garage is not yet available in the
+            app.
           </small>
         </section>
         <section className="settings-card">
           <h2>
             <WifiOff size={19} />
-            Offline viewing
+            {isDeviceMode() ? 'Always with you' : 'Offline viewing'}
           </h2>
           <p>
-            This device saves a copy of your garage when connected. You can view that copy offline.
-            Reconnect to add cars, update parts, or upload photos.
+            {isDeviceMode()
+              ? 'Your garage is stored directly on this device. Add cars, update parts, save receipts, and record progress photos with or without an internet connection.'
+              : 'This device saves a copy of your shared garage when connected. You can view that copy offline. Reconnect to make changes.'}
           </p>
           <small className="settings-help">
-            Signed in as {snapshot.user.name}. Sign out removes this account’s saved copy from this
-            device.
+            {isDeviceMode()
+              ? `Personalized for ${snapshot.user.name}. No account or server required.`
+              : `Signed in as ${snapshot.user.name}. Sign out removes this account’s saved copy from this device.`}
           </small>
-          <button className="secondary" style={{ marginTop: 20 }} onClick={() => void onSignOut()}>
-            <LogOut size={16} /> Sign out
-          </button>
+          {!isDeviceMode() && (
+            <button
+              className="secondary"
+              style={{ marginTop: 20 }}
+              onClick={() => void onSignOut()}
+            >
+              <LogOut size={16} /> Sign out
+            </button>
+          )}
         </section>
+        {native && (
+          <section className="settings-card">
+            <h2>
+              <Users size={19} />
+              Shared garages
+            </h2>
+            {isDeviceMode() ? (
+              <>
+                <p>
+                  Sharing is optional. Connect to a hosted garage to work with an owner and staff.
+                  Your personal garage stays on this device; it is not uploaded automatically.
+                </p>
+                <Field label="Shared garage address">
+                  <input
+                    type="url"
+                    placeholder="https://garage.example.com"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                  />
+                </Field>
+                <button
+                  className="secondary"
+                  disabled={!address.trim()}
+                  onClick={async () => {
+                    try {
+                      await onConnect(address);
+                    } catch (e) {
+                      onError(e instanceof Error ? e.message : String(e));
+                    }
+                  }}
+                >
+                  Connect to shared garage
+                </button>
+              </>
+            ) : (
+              <>
+                <p>
+                  Your personal device garage remains available separately from this shared garage.
+                </p>
+                <button className="secondary" onClick={() => void onUseDevice()}>
+                  Open my device garage
+                </button>
+              </>
+            )}
+          </section>
+        )}
       </div>
     </>
   );

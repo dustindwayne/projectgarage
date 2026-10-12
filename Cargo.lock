@@ -2571,6 +2571,8 @@ dependencies = [
 name = "project-garage"
 version = "0.1.0"
 dependencies = [
+ "garage-server",
+ "serde_json",
  "tauri",
  "tauri-build",
 ]
