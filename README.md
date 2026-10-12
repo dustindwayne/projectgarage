@@ -67,7 +67,7 @@ To publish the next update, increase the matching app versions in `package.json`
 node scripts/publish-update.mjs
 ```
 
-Commit the installers, checksums, and `downloads/latest.json` together and push to `main`. Build Android updates with the **same signing key** as the installed app. Keep your signing keystore backed up securely; never commit it. The current Android CI workflow produces test artifacts with its runner's own debug key and does not publish them into this update channel.
+Commit the installers, checksums, and `downloads/latest.json` together and push to `main`. Build Android updates with the **same signing key** as the installed app. Keep your signing keystore backed up securely; never commit it. GitHub Actions is disabled. Builds are performed locally and the resulting installers are published to the update repository.
 
 ## Owner and staff access
 
@@ -132,7 +132,7 @@ npm run tauri android dev
 npm run tauri android build -- --apk
 ```
 
-On Windows, `./scripts/build-android.ps1` builds an ARM64 debug APK and copies it to `artifacts/project-garage-arm64-debug.apk`. It uses Android Studio's Java runtime and includes a file-copy fallback for machines that do not permit symbolic links. The **Android APK** GitHub Actions workflow also builds a downloadable test APK on pushes to `main`.
+On Windows, `./scripts/build-android.ps1` builds an ARM64 debug APK and copies it to `artifacts/project-garage-arm64-debug.apk`. It uses Android Studio's Java runtime and includes a file-copy fallback for machines that do not permit symbolic links. GitHub does not build the app on pushes; use the local build script.
 
 The installed Android and desktop apps call Rust directly and store their personal garage in the app's private data directory. They do not start a local HTTP server or listen on a port. If you choose to join a shared garage, use its hosted HTTPS address. Device garages and hosted garages remain separate; local records are not uploaded automatically.
 
