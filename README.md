@@ -10,7 +10,7 @@ Android comes first, with a shared Rust foundation and a Tauri 2 app shell for W
 
 ## Build status
 
-Active development. The Rust core, SQLite service, account flow, shared-garage permissions, and cross-platform shell are checked in. The interface and platform build verification are being completed on `main`. This repository does not yet represent a store-ready Android release.
+The first working version includes the responsive interface, Rust core, SQLite service, account flow, shared-garage permissions, and cross-platform shell. The interface builds successfully, and the Rust permission and service tests pass. Native platform builds are being verified on `main`. This is an early development build, not a store-ready Android release.
 
 ## What belongs in your garage
 

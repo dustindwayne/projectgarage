@@ -1,94 +1,464 @@
-use axum::{extract::{DefaultBodyLimit, State}, http::{HeaderMap, StatusCode, Method}, routing::{get, post}, Json, Router};
-use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier, password_hash::{rand_core::OsRng, SaltString}};
+use argon2::{
+    password_hash::{rand_core::OsRng, SaltString},
+    Argon2, PasswordHash, PasswordHasher, PasswordVerifier,
+};
+use axum::{
+    extract::{DefaultBodyLimit, State},
+    http::{HeaderMap, Method, StatusCode},
+    routing::{get, post},
+    Json, Router,
+};
 use garage_core::{new_id, Action, Garage, Role};
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
-use std::{sync::{Arc, Mutex}, time::{SystemTime, UNIX_EPOCH}, collections::HashMap};
-use tower_http::{cors::CorsLayer, services::{ServeDir, ServeFile}};
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+    time::{SystemTime, UNIX_EPOCH},
+};
+use tower_http::{
+    cors::CorsLayer,
+    services::{ServeDir, ServeFile},
+};
 
 type Db = Arc<Mutex<Connection>>;
 type ApiResult = Result<Json<Value>, ApiError>;
 struct ApiError(StatusCode, String);
-impl axum::response::IntoResponse for ApiError { fn into_response(self) -> axum::response::Response { (self.0, Json(json!({"error":self.1}))).into_response() } }
-impl From<rusqlite::Error> for ApiError { fn from(e: rusqlite::Error) -> Self { eprintln!("Database error: {e}"); Self(StatusCode::INTERNAL_SERVER_ERROR,"Could not save garage data".into()) } }
-fn bad(s: impl Into<String>) -> ApiError { ApiError(StatusCode::BAD_REQUEST,s.into()) }
-fn now() -> i64 { SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as i64 }
-fn digest(s: &str) -> String { format!("{:x}", Sha256::digest(s.as_bytes())) }
-#[derive(Clone)] struct App { db: Db, attempts: Arc<Mutex<HashMap<String,(i64,u32)>>> }
+impl axum::response::IntoResponse for ApiError {
+    fn into_response(self) -> axum::response::Response {
+        (self.0, Json(json!({"error":self.1}))).into_response()
+    }
+}
+impl From<rusqlite::Error> for ApiError {
+    fn from(e: rusqlite::Error) -> Self {
+        eprintln!("Database error: {e}");
+        Self(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Could not save garage data".into(),
+        )
+    }
+}
+fn bad(s: impl Into<String>) -> ApiError {
+    ApiError(StatusCode::BAD_REQUEST, s.into())
+}
+fn now() -> i64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs() as i64
+}
+fn digest(s: &str) -> String {
+    format!("{:x}", Sha256::digest(s.as_bytes()))
+}
+#[derive(Clone)]
+struct App {
+    db: Db,
+    attempts: Arc<Mutex<HashMap<String, (i64, u32)>>>,
+}
 fn database(path: &str) -> Connection {
-    let db=Connection::open(path).expect("Open garage database");
+    let db = Connection::open(path).expect("Open garage database");
     db.execute_batch("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;
       CREATE TABLE IF NOT EXISTS garages(id TEXT PRIMARY KEY, data TEXT NOT NULL, revision INTEGER NOT NULL DEFAULT 0);
       CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY, email TEXT NOT NULL UNIQUE, name TEXT NOT NULL, password TEXT NOT NULL, garage_id TEXT NOT NULL REFERENCES garages(id), role TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS sessions(token TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, expires INTEGER NOT NULL);
-      CREATE TABLE IF NOT EXISTS invites(token TEXT PRIMARY KEY, garage_id TEXT NOT NULL REFERENCES garages(id), expires INTEGER NOT NULL);").expect("Initialize database"); db
+      CREATE TABLE IF NOT EXISTS invites(token TEXT PRIMARY KEY, garage_id TEXT NOT NULL REFERENCES garages(id), expires INTEGER NOT NULL);").expect("Initialize database");
+    db
 }
-struct Actor { id: String, name: String, email: String, garage_id: String, role: Role }
-fn actor(db: &Connection, headers: &HeaderMap) -> Result<Actor,ApiError> {
-    let token=headers.get("authorization").and_then(|v|v.to_str().ok()).and_then(|v|v.strip_prefix("Bearer ")).ok_or(ApiError(StatusCode::UNAUTHORIZED,"Sign in to continue".into()))?;
+struct Actor {
+    id: String,
+    name: String,
+    email: String,
+    garage_id: String,
+    role: Role,
+}
+fn actor(db: &Connection, headers: &HeaderMap) -> Result<Actor, ApiError> {
+    let token = headers
+        .get("authorization")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.strip_prefix("Bearer "))
+        .ok_or(ApiError(
+            StatusCode::UNAUTHORIZED,
+            "Sign in to continue".into(),
+        ))?;
     db.query_row("SELECT u.id,u.name,u.email,u.garage_id,u.role FROM users u JOIN sessions s ON s.user_id=u.id WHERE s.token=? AND s.expires>?",params![digest(token),now()],|r|Ok(Actor{id:r.get(0)?,name:r.get(1)?,email:r.get(2)?,garage_id:r.get(3)?,role:if r.get::<_,String>(4)?=="owner"{Role::Owner}else{Role::Staff}})).optional()?.ok_or(ApiError(StatusCode::UNAUTHORIZED,"Your session expired. Sign in again.".into()))
 }
-fn snapshot(db: &Connection,a: &Actor) -> Result<Value,ApiError> {
-    let (data,revision):(String,i64)=db.query_row("SELECT data,revision FROM garages WHERE id=?",[&a.garage_id],|r|Ok((r.get(0)?,r.get(1)?)))?;
-    let garage: Value=serde_json::from_str(&data).map_err(|_|bad("Garage data is invalid"))?;
-    let mut stmt=db.prepare("SELECT id,name,email,role FROM users WHERE garage_id=? ORDER BY role,name")?;
+fn snapshot(db: &Connection, a: &Actor) -> Result<Value, ApiError> {
+    let (data, revision): (String, i64) = db.query_row(
+        "SELECT data,revision FROM garages WHERE id=?",
+        [&a.garage_id],
+        |r| Ok((r.get(0)?, r.get(1)?)),
+    )?;
+    let garage: Value = serde_json::from_str(&data).map_err(|_| bad("Garage data is invalid"))?;
+    let mut stmt =
+        db.prepare("SELECT id,name,email,role FROM users WHERE garage_id=? ORDER BY role,name")?;
     let members=stmt.query_map([&a.garage_id],|r|Ok(json!({"id":r.get::<_,String>(0)?,"name":r.get::<_,String>(1)?,"email":r.get::<_,String>(2)?,"role":r.get::<_,String>(3)?})))?.collect::<Result<Vec<_>,_>>()?;
-    Ok(json!({"garage":garage,"revision":revision,"user":{"id":a.id,"name":a.name,"email":a.email,"role":a.role},"members":members}))
+    Ok(
+        json!({"garage":garage,"revision":revision,"user":{"id":a.id,"name":a.name,"email":a.email,"role":a.role},"members":members}),
+    )
 }
-#[derive(Deserialize)] struct AuthInput { email:String, password:String, #[serde(default)] name:String, #[serde(default)] invite:String }
-fn auth_limit(app: &App, email: &str) -> Result<(),ApiError> { let mut attempts=app.attempts.lock().unwrap(); attempts.retain(|_,v| now()-v.0 < 300); let e=attempts.entry(email.to_lowercase()).or_insert((now(),0)); e.1+=1; if e.1>15 { return Err(ApiError(StatusCode::TOO_MANY_REQUESTS,"Too many attempts. Try again in five minutes.".into())); } Ok(()) }
-async fn register(State(app):State<App>,Json(input):Json<AuthInput>) -> ApiResult {
-    auth_limit(&app,&input.email)?;
-    let email=input.email.trim().to_lowercase(); let name=input.name.trim();
-    if name.is_empty() || name.len()>80 || !email.contains('@') || email.len()>254 || input.password.len()<10 || input.password.len()>256 { return Err(bad("Enter your name, email, and a password of 10–256 characters")); }
-    let hash=Argon2::default().hash_password(input.password.as_bytes(),&SaltString::generate(&mut OsRng)).map_err(|_|bad("Could not create account"))?.to_string();
-    let mut db=app.db.lock().unwrap(); let tx=db.transaction()?;
-    if tx.query_row("SELECT id FROM users WHERE email=?",[&email],|r|r.get::<_,String>(0)).optional()?.is_some() { return Err(bad("That email already has an account. Sign in instead.")); }
-    let gid; let role;
-    if input.invite.trim().is_empty() { gid=new_id(); role="owner"; tx.execute("INSERT INTO garages(id,data) VALUES(?,?)",params![gid,serde_json::to_string(&Garage::new(name)).unwrap()])?; }
-    else { gid=tx.query_row("SELECT garage_id FROM invites WHERE token=? AND expires>?",params![digest(input.invite.trim()),now()],|r|r.get::<_,String>(0)).optional()?.ok_or(bad("This invitation is expired or already used"))?; role="staff"; tx.execute("DELETE FROM invites WHERE token=?",[digest(input.invite.trim())])?; }
-    let uid=new_id(); tx.execute("INSERT INTO users VALUES(?,?,?,?,?,?)",params![uid,email,name,hash,gid,role])?;
-    let token=format!("{}{}",new_id(),new_id()); tx.execute("INSERT INTO sessions VALUES(?,?,?)",params![digest(&token),uid,now()+30*86400])?; tx.commit()?;
-    let a=Actor{id:uid,name:name.into(),email,garage_id:gid,role:if role=="owner"{Role::Owner}else{Role::Staff}};
+#[derive(Deserialize)]
+struct AuthInput {
+    email: String,
+    password: String,
+    #[serde(default)]
+    name: String,
+    #[serde(default)]
+    invite: String,
+}
+fn auth_limit(app: &App, email: &str) -> Result<(), ApiError> {
+    let mut attempts = app.attempts.lock().unwrap();
+    attempts.retain(|_, v| now() - v.0 < 300);
+    let e = attempts.entry(email.to_lowercase()).or_insert((now(), 0));
+    e.1 += 1;
+    if e.1 > 15 {
+        return Err(ApiError(
+            StatusCode::TOO_MANY_REQUESTS,
+            "Too many attempts. Try again in five minutes.".into(),
+        ));
+    }
+    Ok(())
+}
+async fn register(State(app): State<App>, Json(input): Json<AuthInput>) -> ApiResult {
+    auth_limit(&app, &input.email)?;
+    let email = input.email.trim().to_lowercase();
+    let name = input.name.trim();
+    if name.is_empty()
+        || name.len() > 80
+        || !email.contains('@')
+        || email.len() > 254
+        || input.password.len() < 10
+        || input.password.len() > 256
+    {
+        return Err(bad(
+            "Enter your name, email, and a password of 10–256 characters",
+        ));
+    }
+    let hash = Argon2::default()
+        .hash_password(input.password.as_bytes(), &SaltString::generate(&mut OsRng))
+        .map_err(|_| bad("Could not create account"))?
+        .to_string();
+    let mut db = app.db.lock().unwrap();
+    let tx = db.transaction()?;
+    if tx
+        .query_row("SELECT id FROM users WHERE email=?", [&email], |r| {
+            r.get::<_, String>(0)
+        })
+        .optional()?
+        .is_some()
+    {
+        return Err(bad("That email already has an account. Sign in instead."));
+    }
+    let gid;
+    let role;
+    if input.invite.trim().is_empty() {
+        gid = new_id();
+        role = "owner";
+        tx.execute(
+            "INSERT INTO garages(id,data) VALUES(?,?)",
+            params![gid, serde_json::to_string(&Garage::new(name)).unwrap()],
+        )?;
+    } else {
+        gid = tx
+            .query_row(
+                "SELECT garage_id FROM invites WHERE token=? AND expires>?",
+                params![digest(input.invite.trim()), now()],
+                |r| r.get::<_, String>(0),
+            )
+            .optional()?
+            .ok_or(bad("This invitation is expired or already used"))?;
+        role = "staff";
+        tx.execute(
+            "DELETE FROM invites WHERE token=?",
+            [digest(input.invite.trim())],
+        )?;
+    }
+    let uid = new_id();
+    tx.execute(
+        "INSERT INTO users VALUES(?,?,?,?,?,?)",
+        params![uid, email, name, hash, gid, role],
+    )?;
+    let token = format!("{}{}", new_id(), new_id());
+    tx.execute(
+        "INSERT INTO sessions VALUES(?,?,?)",
+        params![digest(&token), uid, now() + 30 * 86400],
+    )?;
+    tx.commit()?;
+    let a = Actor {
+        id: uid,
+        name: name.into(),
+        email,
+        garage_id: gid,
+        role: if role == "owner" {
+            Role::Owner
+        } else {
+            Role::Staff
+        },
+    };
     Ok(Json(json!({"token":token,"snapshot":snapshot(&db,&a)?})))
 }
-async fn login(State(app):State<App>,Json(input):Json<AuthInput>) -> ApiResult {
-    auth_limit(&app,&input.email)?;
-    if input.password.len()>256 { return Err(bad("Invalid credentials")); }
-    let db=app.db.lock().unwrap();
-    let row=db.query_row("SELECT id,password FROM users WHERE email=?",[input.email.trim().to_lowercase()],|r|Ok((r.get::<_,String>(0)?,r.get::<_,String>(1)?))).optional()?;
-    let (id,hash)=row.ok_or(ApiError(StatusCode::UNAUTHORIZED,"Email or password is incorrect".into()))?;
-    if Argon2::default().verify_password(input.password.as_bytes(),&PasswordHash::new(&hash).map_err(|_|bad("Account password is invalid"))?).is_err() { return Err(ApiError(StatusCode::UNAUTHORIZED,"Email or password is incorrect".into())); }
-    let token=format!("{}{}",new_id(),new_id()); db.execute("DELETE FROM sessions WHERE expires<?",[now()])?; db.execute("INSERT INTO sessions VALUES(?,?,?)",params![digest(&token),id,now()+30*86400])?;
-    let mut headers=HeaderMap::new(); headers.insert("authorization",format!("Bearer {token}").parse().unwrap());
-    Ok(Json(json!({"token":token,"snapshot":snapshot(&db,&actor(&db,&headers)?)?})))
+async fn login(State(app): State<App>, Json(input): Json<AuthInput>) -> ApiResult {
+    auth_limit(&app, &input.email)?;
+    if input.password.len() > 256 {
+        return Err(bad("Invalid credentials"));
+    }
+    let db = app.db.lock().unwrap();
+    let row = db
+        .query_row(
+            "SELECT id,password FROM users WHERE email=?",
+            [input.email.trim().to_lowercase()],
+            |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)),
+        )
+        .optional()?;
+    let (id, hash) = row.ok_or(ApiError(
+        StatusCode::UNAUTHORIZED,
+        "Email or password is incorrect".into(),
+    ))?;
+    if Argon2::default()
+        .verify_password(
+            input.password.as_bytes(),
+            &PasswordHash::new(&hash).map_err(|_| bad("Account password is invalid"))?,
+        )
+        .is_err()
+    {
+        return Err(ApiError(
+            StatusCode::UNAUTHORIZED,
+            "Email or password is incorrect".into(),
+        ));
+    }
+    let token = format!("{}{}", new_id(), new_id());
+    db.execute("DELETE FROM sessions WHERE expires<?", [now()])?;
+    db.execute(
+        "INSERT INTO sessions VALUES(?,?,?)",
+        params![digest(&token), id, now() + 30 * 86400],
+    )?;
+    let mut headers = HeaderMap::new();
+    headers.insert("authorization", format!("Bearer {token}").parse().unwrap());
+    Ok(Json(
+        json!({"token":token,"snapshot":snapshot(&db,&actor(&db,&headers)?)?}),
+    ))
 }
-async fn read(State(app):State<App>,headers:HeaderMap) -> ApiResult { let db=app.db.lock().unwrap(); Ok(Json(snapshot(&db,&actor(&db,&headers)?)?)) }
-#[derive(Deserialize)] struct Mutation { revision:i64, action:Action }
-async fn mutate(State(app):State<App>,headers:HeaderMap,Json(input):Json<Mutation>) -> ApiResult {
-    let mut db=app.db.lock().unwrap(); let a=actor(&db,&headers)?; let tx=db.transaction()?;
-    let (data,revision):(String,i64)=tx.query_row("SELECT data,revision FROM garages WHERE id=?",[&a.garage_id],|r|Ok((r.get(0)?,r.get(1)?)))?;
-    if revision!=input.revision { return Err(ApiError(StatusCode::CONFLICT,"Someone updated the garage. Your view has been refreshed; review your change and save again.".into())); }
-    let mut garage:Garage=serde_json::from_str(&data).map_err(|_|bad("Garage data is invalid"))?;
-    garage.apply(&a.role,&a.email,input.action).map_err(|e|ApiError(StatusCode::FORBIDDEN,e))?;
-    let data=serde_json::to_string(&garage).unwrap(); if data.len()>100_000_000 { return Err(bad("Garage has reached the 100 MB storage limit. Export a backup and reduce photo size.")); }
-    tx.execute("UPDATE garages SET data=?,revision=revision+1 WHERE id=?",params![data,a.garage_id])?; tx.commit()?; Ok(Json(snapshot(&db,&a)?))
+async fn read(State(app): State<App>, headers: HeaderMap) -> ApiResult {
+    let db = app.db.lock().unwrap();
+    Ok(Json(snapshot(&db, &actor(&db, &headers)?)?))
 }
-async fn invite(State(app):State<App>,headers:HeaderMap) -> ApiResult { let db=app.db.lock().unwrap(); let a=actor(&db,&headers)?; if a.role!=Role::Owner{return Err(ApiError(StatusCode::FORBIDDEN,"Only the owner can invite staff".into()));} let token=new_id(); db.execute("DELETE FROM invites WHERE expires<?",[now()])?; db.execute("INSERT INTO invites VALUES(?,?,?)",params![digest(&token),a.garage_id,now()+7*86400])?; Ok(Json(json!({"code":token,"expires":now()+7*86400}))) }
-#[derive(Deserialize)] struct RemoveMember { id:String }
-async fn remove_member(State(app):State<App>,headers:HeaderMap,Json(input):Json<RemoveMember>) -> ApiResult { let db=app.db.lock().unwrap(); let a=actor(&db,&headers)?; if a.role!=Role::Owner { return Err(ApiError(StatusCode::FORBIDDEN,"Only the owner can remove staff".into())); } db.execute("DELETE FROM users WHERE id=? AND garage_id=? AND role='staff'",params![input.id,a.garage_id])?; Ok(Json(snapshot(&db,&a)?)) }
-async fn logout(State(app):State<App>,headers:HeaderMap) -> ApiResult { let db=app.db.lock().unwrap(); if let Some(token)=headers.get("authorization").and_then(|v|v.to_str().ok()).and_then(|v|v.strip_prefix("Bearer ")) { db.execute("DELETE FROM sessions WHERE token=?",[digest(token)])?; } Ok(Json(json!({"ok":true}))) }
+#[derive(Deserialize)]
+struct Mutation {
+    revision: i64,
+    action: Action,
+}
+async fn mutate(
+    State(app): State<App>,
+    headers: HeaderMap,
+    Json(input): Json<Mutation>,
+) -> ApiResult {
+    let mut db = app.db.lock().unwrap();
+    let a = actor(&db, &headers)?;
+    let tx = db.transaction()?;
+    let (data, revision): (String, i64) = tx.query_row(
+        "SELECT data,revision FROM garages WHERE id=?",
+        [&a.garage_id],
+        |r| Ok((r.get(0)?, r.get(1)?)),
+    )?;
+    if revision != input.revision {
+        return Err(ApiError(StatusCode::CONFLICT,"Someone updated the garage. Your view has been refreshed; review your change and save again.".into()));
+    }
+    let mut garage: Garage =
+        serde_json::from_str(&data).map_err(|_| bad("Garage data is invalid"))?;
+    garage
+        .apply(&a.role, &a.email, input.action)
+        .map_err(|e| ApiError(StatusCode::FORBIDDEN, e))?;
+    let data = serde_json::to_string(&garage).unwrap();
+    if data.len() > 100_000_000 {
+        return Err(bad(
+            "Garage has reached the 100 MB storage limit. Export a backup and reduce photo size.",
+        ));
+    }
+    tx.execute(
+        "UPDATE garages SET data=?,revision=revision+1 WHERE id=?",
+        params![data, a.garage_id],
+    )?;
+    tx.commit()?;
+    Ok(Json(snapshot(&db, &a)?))
+}
+async fn invite(State(app): State<App>, headers: HeaderMap) -> ApiResult {
+    let db = app.db.lock().unwrap();
+    let a = actor(&db, &headers)?;
+    if a.role != Role::Owner {
+        return Err(ApiError(
+            StatusCode::FORBIDDEN,
+            "Only the owner can invite staff".into(),
+        ));
+    }
+    let token = new_id();
+    db.execute("DELETE FROM invites WHERE expires<?", [now()])?;
+    db.execute(
+        "INSERT INTO invites VALUES(?,?,?)",
+        params![digest(&token), a.garage_id, now() + 7 * 86400],
+    )?;
+    Ok(Json(json!({"code":token,"expires":now()+7*86400})))
+}
+#[derive(Deserialize)]
+struct RemoveMember {
+    id: String,
+}
+async fn remove_member(
+    State(app): State<App>,
+    headers: HeaderMap,
+    Json(input): Json<RemoveMember>,
+) -> ApiResult {
+    let db = app.db.lock().unwrap();
+    let a = actor(&db, &headers)?;
+    if a.role != Role::Owner {
+        return Err(ApiError(
+            StatusCode::FORBIDDEN,
+            "Only the owner can remove staff".into(),
+        ));
+    }
+    db.execute(
+        "DELETE FROM users WHERE id=? AND garage_id=? AND role='staff'",
+        params![input.id, a.garage_id],
+    )?;
+    Ok(Json(snapshot(&db, &a)?))
+}
+async fn logout(State(app): State<App>, headers: HeaderMap) -> ApiResult {
+    let db = app.db.lock().unwrap();
+    if let Some(token) = headers
+        .get("authorization")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.strip_prefix("Bearer "))
+    {
+        db.execute("DELETE FROM sessions WHERE token=?", [digest(token)])?;
+    }
+    Ok(Json(json!({"ok":true})))
+}
 fn router(app: App) -> Router {
     let origins=std::env::var("GARAGE_ORIGINS").unwrap_or("http://localhost:1420,http://127.0.0.1:1420,http://tauri.localhost,https://tauri.localhost,tauri://localhost".into()).split(',').filter_map(|s|s.trim().parse().ok()).collect::<Vec<_>>();
-    Router::new().route("/api/health",get(||async{Json(json!({"ok":true}))})).route("/api/register",post(register)).route("/api/login",post(login)).route("/api/logout",post(logout)).route("/api/garage",get(read)).route("/api/action",post(mutate)).route("/api/invite",post(invite)).route("/api/member/remove",post(remove_member))
-    .layer(DefaultBodyLimit::max(24*1024*1024)).layer(CorsLayer::new().allow_origin(origins).allow_methods([Method::GET,Method::POST]).allow_headers([axum::http::header::AUTHORIZATION,axum::http::header::CONTENT_TYPE])).with_state(app)
-    .fallback_service(ServeDir::new("dist").not_found_service(ServeFile::new("dist/index.html")))
+    Router::new()
+        .route("/api/health", get(|| async { Json(json!({"ok":true})) }))
+        .route("/api/register", post(register))
+        .route("/api/login", post(login))
+        .route("/api/logout", post(logout))
+        .route("/api/garage", get(read))
+        .route("/api/action", post(mutate))
+        .route("/api/invite", post(invite))
+        .route("/api/member/remove", post(remove_member))
+        .layer(DefaultBodyLimit::max(24 * 1024 * 1024))
+        .layer(
+            CorsLayer::new()
+                .allow_origin(origins)
+                .allow_methods([Method::GET, Method::POST])
+                .allow_headers([
+                    axum::http::header::AUTHORIZATION,
+                    axum::http::header::CONTENT_TYPE,
+                ]),
+        )
+        .with_state(app)
+        .fallback_service(
+            ServeDir::new("dist").not_found_service(ServeFile::new("dist/index.html")),
+        )
 }
-#[tokio::main] async fn main() { let path=std::env::var("GARAGE_DB").unwrap_or("data/garage.db".into()); if let Some(parent)=std::path::Path::new(&path).parent() { std::fs::create_dir_all(parent).expect("Create data directory"); } let app=App{db:Arc::new(Mutex::new(database(&path))),attempts:Default::default()}; let address=std::env::var("GARAGE_BIND").unwrap_or("127.0.0.1:3030".into()); let listener=tokio::net::TcpListener::bind(&address).await.expect("Bind server"); println!("Project Garage is open at http://{address}"); axum::serve(listener,router(app)).await.unwrap(); }
-#[cfg(test)] mod tests {
- use super::*; use tower::ServiceExt; use axum::{body::Body,http::Request}; use http_body_util::BodyExt;
- async fn request(app:Router,path:&str,token:&str,data:Option<Value>)->(StatusCode,Value){let mut req=Request::builder().uri(path).header("authorization",format!("Bearer {token}")); let body=if let Some(data)=data{req=req.method("POST").header("content-type","application/json");Body::from(data.to_string())}else{Body::empty()};let res=app.oneshot(req.body(body).unwrap()).await.unwrap();let status=res.status();let body=res.into_body().collect().await.unwrap().to_bytes();(status,serde_json::from_slice(&body).unwrap())}
- #[tokio::test] async fn shared_garage_and_conflict_checks(){let app=router(App{db:Arc::new(Mutex::new(database(":memory:"))),attempts:Default::default()});let(s,owner)=request(app.clone(),"/api/register","",Some(json!({"name":"Kevin","email":"kevin@example.com","password":"long-test-password"}))).await;assert_eq!(s,StatusCode::OK);let token=owner["token"].as_str().unwrap();let(_,inv)=request(app.clone(),"/api/invite",token,Some(json!({}))).await;let(s,staff)=request(app.clone(),"/api/register","",Some(json!({"name":"Sam","email":"sam@example.com","password":"long-test-password","invite":inv["code"]}))).await;assert_eq!(s,StatusCode::OK);assert_eq!(staff["snapshot"]["user"]["role"],"staff");assert_eq!(staff["snapshot"]["garage"]["name"],"Kevin's Project Garage");let action=json!({"revision":0,"action":{"type":"configure","name":"The Workshop","currency":"USD"}});let(s,_)=request(app.clone(),"/api/action",staff["token"].as_str().unwrap(),Some(action.clone())).await;assert_eq!(s,StatusCode::FORBIDDEN);let(s,_)=request(app.clone(),"/api/action",token,Some(action.clone())).await;assert_eq!(s,StatusCode::OK);let(s,_)=request(app.clone(),"/api/action",token,Some(action)).await;assert_eq!(s,StatusCode::CONFLICT);let(s,_)=request(app.clone(),"/api/garage","wrong",None).await;assert_eq!(s,StatusCode::UNAUTHORIZED);let(s,_)=request(app.clone(),"/api/login","",Some(json!({"email":"kevin@example.com","password":"wrong"}))).await;assert_eq!(s,StatusCode::UNAUTHORIZED);let(s,_)=request(app,"/api/login","",Some(json!({"email":"kevin@example.com","password":"long-test-password"}))).await;assert_eq!(s,StatusCode::OK);}
+#[tokio::main]
+async fn main() {
+    let path = std::env::var("GARAGE_DB").unwrap_or("data/garage.db".into());
+    if let Some(parent) = std::path::Path::new(&path).parent() {
+        std::fs::create_dir_all(parent).expect("Create data directory");
+    }
+    let app = App {
+        db: Arc::new(Mutex::new(database(&path))),
+        attempts: Default::default(),
+    };
+    let address = std::env::var("GARAGE_BIND").unwrap_or("127.0.0.1:3030".into());
+    let listener = tokio::net::TcpListener::bind(&address)
+        .await
+        .expect("Bind server");
+    println!("Project Garage is open at http://{address}");
+    axum::serve(listener, router(app)).await.unwrap();
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::{body::Body, http::Request};
+    use http_body_util::BodyExt;
+    use tower::ServiceExt;
+    async fn request(
+        app: Router,
+        path: &str,
+        token: &str,
+        data: Option<Value>,
+    ) -> (StatusCode, Value) {
+        let mut req = Request::builder()
+            .uri(path)
+            .header("authorization", format!("Bearer {token}"));
+        let body = if let Some(data) = data {
+            req = req
+                .method("POST")
+                .header("content-type", "application/json");
+            Body::from(data.to_string())
+        } else {
+            Body::empty()
+        };
+        let res = app.oneshot(req.body(body).unwrap()).await.unwrap();
+        let status = res.status();
+        let body = res.into_body().collect().await.unwrap().to_bytes();
+        (status, serde_json::from_slice(&body).unwrap())
+    }
+    #[tokio::test]
+    async fn shared_garage_and_conflict_checks() {
+        let app = router(App {
+            db: Arc::new(Mutex::new(database(":memory:"))),
+            attempts: Default::default(),
+        });
+        let (s, owner) = request(
+            app.clone(),
+            "/api/register",
+            "",
+            Some(
+                json!({"name":"Kevin","email":"kevin@example.com","password":"long-test-password"}),
+            ),
+        )
+        .await;
+        assert_eq!(s, StatusCode::OK);
+        let token = owner["token"].as_str().unwrap();
+        let (_, inv) = request(app.clone(), "/api/invite", token, Some(json!({}))).await;
+        let(s,staff)=request(app.clone(),"/api/register","",Some(json!({"name":"Sam","email":"sam@example.com","password":"long-test-password","invite":inv["code"]}))).await;
+        assert_eq!(s, StatusCode::OK);
+        assert_eq!(staff["snapshot"]["user"]["role"], "staff");
+        assert_eq!(
+            staff["snapshot"]["garage"]["name"],
+            "Kevin's Project Garage"
+        );
+        let action = json!({"revision":0,"action":{"type":"configure","name":"The Workshop","currency":"USD"}});
+        let (s, _) = request(
+            app.clone(),
+            "/api/action",
+            staff["token"].as_str().unwrap(),
+            Some(action.clone()),
+        )
+        .await;
+        assert_eq!(s, StatusCode::FORBIDDEN);
+        let (s, _) = request(app.clone(), "/api/action", token, Some(action.clone())).await;
+        assert_eq!(s, StatusCode::OK);
+        let (s, _) = request(app.clone(), "/api/action", token, Some(action)).await;
+        assert_eq!(s, StatusCode::CONFLICT);
+        let (s, _) = request(app.clone(), "/api/garage", "wrong", None).await;
+        assert_eq!(s, StatusCode::UNAUTHORIZED);
+        let (s, _) = request(
+            app.clone(),
+            "/api/login",
+            "",
+            Some(json!({"email":"kevin@example.com","password":"wrong"})),
+        )
+        .await;
+        assert_eq!(s, StatusCode::UNAUTHORIZED);
+        let (s, _) = request(
+            app,
+            "/api/login",
+            "",
+            Some(json!({"email":"kevin@example.com","password":"long-test-password"})),
+        )
+        .await;
+        assert_eq!(s, StatusCode::OK);
+    }
 }
