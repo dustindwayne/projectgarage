@@ -1,13 +1,16 @@
 :root {
   font-family: Inter, 'Segoe UI', Arial, sans-serif;
-  color: #262b27;
-  background: #f4f3ee;
+  color: var(--ink);
+  background: var(--background);
   font-synthesis: none;
   --lime: #c2f218;
   --dark: #202622;
-  --muted: #7b8178;
+  --muted: #697260;
   --line: #dedfd7;
   --paper: #fffefa;
+  --ink: #262b27;
+  --background: #f4f3ee;
+  --soft: #edf0e5;
 }
 * {
   box-sizing: border-box;

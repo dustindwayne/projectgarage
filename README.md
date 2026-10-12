@@ -12,7 +12,7 @@ Android comes first, with a shared Rust foundation and a Tauri 2 app shell for W
 
 ## Build status
 
-The first working version includes the responsive interface, on-device Rust/SQLite storage, personal welcome, parts and expense tracking, photo journal, and optional shared-garage permissions. Seven Rust tests cover permission rules, hosted sharing, and reopening device data without any running server. This is an early development build, not a store-ready Android release. Physical-device testing remains to be done.
+The app includes on-device Rust/SQLite storage, personal welcome, parts and expense tracking, photo journal, System/Light/Dark themes, and optional shared-garage permissions. Ten Rust tests cover permissions, acquisition totals, saved-data compatibility, persistence, and desktop discovery of Android announcements. This is an early development build, not a store-ready Android release. Physical-device testing remains to be done.
 
 **[Download the Android test APK](downloads/project-garage-arm64-debug.apk)** · [Build notes](downloads/README.md)
 
@@ -22,7 +22,10 @@ The first working version includes the responsive interface, on-device Rust/SQLi
 - **Multiple project cars:** keep each car's details, required work, parts, and photo history together.
 - **Parts from start to finish:** Needed → Purchased → Received → Installed.
 - **Purchase records:** price, purchase date, seller, receipts, and applicable warranty.
-- **Total spending:** see what you've actually spent on purchased parts, without labor billing or budget management.
+- **Where it started:** record where each car came from, its initial purchase price, and purchase date. Unknown prices remain distinct from a free car.
+- **Total spending:** see car purchase cost and purchased parts separately, plus their combined total. Needed-part estimates and labor are excluded.
+- **Comfortable appearance:** choose System, Light, or Dark in the welcome screen or settings. The choice is remembered on each device.
+- **Mobile first:** larger text and touch targets, full-width phone actions, scrollable status filters, and clear spending and approval labels.
 - **Required jobs:** track wiring, paint, alignment, and other work alongside parts.
 - **Dated build journal:** notes and photos show how the project came along.
 - **Automatic completion:** a project is complete when every approved, required item is done. Optional items and unapproved suggestions do not count.
@@ -30,7 +33,13 @@ The first working version includes the responsive interface, on-device Rust/SQLi
 - **Offline work:** add cars, edit parts, record purchases, and save progress photos with no internet connection.
 - **Optional shared access:** connect to a hosted garage to work with an owner and staff. Shared garages require a connection for changes and offer offline viewing of their saved copy.
 
-## Optional shared garages: owner and staff access
+## Nearby Android discovery
+
+Installed desktop apps automatically listen for Project Garage on the same Wi-Fi network. Keep the Android app open and check **Settings → Nearby Android apps** on desktop. Android announces only an app identifier; garage records, photos, and account details are not broadcast. Discovery can be disabled in settings, and the choice is remembered.
+
+Discovery uses UDP port 39073. Guest-network isolation or a firewall can prevent detection. On Android 17 and newer, allow the local-network permission when prompted. Discovery identifies devices; pairing, record transfer, and automatic synchronization are not implemented by this feature. Android still runs independently and does not host a local server.
+
+## Owner and staff access
 
 | Action                                      | Owner | Staff                 |
 | ------------------------------------------- | ----- | --------------------- |

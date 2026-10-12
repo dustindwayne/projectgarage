@@ -1,0 +1,510 @@
+html[data-theme='dark'] {
+  color-scheme: dark;
+  --ink: #e8eee4;
+  --background: #151b17;
+  --paper: #222b23;
+  --soft: #2c382c;
+  --line: #3c4939;
+  --muted: #b0bba6;
+}
+.theme-control {
+  display: flex;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 4px;
+  background: var(--paper);
+  margin-bottom: 22px;
+}
+.theme-control button {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  border-radius: 4px;
+  font-size: 14px;
+}
+.theme-control button[aria-pressed='true'] {
+  background: var(--soft);
+  color: var(--ink);
+  font-weight: 650;
+}
+.acquisition-heading {
+  font-size: 17px;
+  margin: 8px 0 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.acquisition-summary {
+  padding: 16px 21px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+.acquisition-summary > span {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 9px;
+  color: var(--muted);
+}
+.acquisition-summary strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+.acquisition-summary p {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+html[data-theme='dark']
+  :is(
+    .topbar,
+    .stats,
+    .car-card,
+    .item-list,
+    .journal-content,
+    .spending-car,
+    .settings-card,
+    .modal,
+    .empty,
+    .secondary,
+    .field input,
+    .field textarea,
+    .field select,
+    .project-summary > div:nth-child(2)
+  ) {
+  background: var(--paper);
+  border-color: var(--line);
+  color: var(--ink);
+}
+html[data-theme='dark']
+  :is(
+    .car-body,
+    .item-details,
+    .journal-title,
+    .project-heading,
+    .page-heading,
+    .modal-heading,
+    .build-progress,
+    .search input,
+    .text-link,
+    .checkbox,
+    .section-heading,
+    .progress-label strong,
+    .field,
+    .settings-card h2
+  ) {
+  color: var(--ink);
+}
+html[data-theme='dark']
+  :is(
+    .page-heading p:last-child,
+    .project-heading p:last-child,
+    .settings-card > p,
+    .muted,
+    .eyebrow,
+    .car-meta,
+    .progress-label,
+    .journal-notes,
+    .journal-title small,
+    .field small,
+    .field > span,
+    .item-details small,
+    .warranty,
+    .build-progress p,
+    .connection,
+    .garage-footnote,
+    .auth-form > div > p:not(.eyebrow)
+  ) {
+  color: var(--muted);
+}
+html[data-theme='dark']
+  :is(
+    .car-footer,
+    .tabs,
+    .member,
+    .stats,
+    .item-row,
+    .stat,
+    .modal,
+    .section-heading,
+    .settings-card,
+    .spending-car,
+    .journal-content,
+    footer
+  ) {
+  border-color: var(--line);
+}
+html[data-theme='dark']
+  :is(
+    .stat > span,
+    .progress-track,
+    .item-icon,
+    .add-card > span,
+    .filters button.active,
+    .invite-code,
+    .tabs span,
+    .icon-button:hover
+  ) {
+  background: var(--soft);
+  color: #c3d5b3;
+}
+html[data-theme='dark'] :is(.add-card, .back, .filters button, .tabs button, .icon-button) {
+  color: var(--muted);
+}
+html[data-theme='dark'] :is(.tabs button.active, .heading-dot, .text-link) {
+  color: #c2f218;
+}
+html[data-theme='dark'] :is(.pill.needed, .status-select.needed, .approval-note, .offline-banner) {
+  background: #403a23;
+  color: #e4ca7b;
+}
+html[data-theme='dark'] :is(.pill.purchased, .status-select.purchased) {
+  background: #333549;
+  color: #c6c6ee;
+}
+html[data-theme='dark'] :is(.pill.received, .status-select.received) {
+  background: #263d46;
+  color: #abd5e5;
+}
+html[data-theme='dark'] :is(.pill.installed, .status-select.installed, .pill.neutral) {
+  background: #34452b;
+  color: #c3dda2;
+}
+html[data-theme='dark'] :is(.form-error, .error-banner) {
+  background: #4c2a24;
+  color: #f5b1a0;
+}
+html[data-theme='dark'] .primary {
+  background: #c2f218;
+  color: #1c2514;
+}
+html[data-theme='dark'] .primary svg {
+  color: #1c2514;
+}
+html[data-theme='dark'] .primary:hover:not(:disabled) {
+  background: #d1ff34;
+}
+html[data-theme='dark'] .auth-form {
+  background: var(--background);
+}
+@media (max-width: 760px) {
+  main {
+    padding: 24px 16px 32px;
+  }
+  .page-heading,
+  .project-heading {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 18px;
+  }
+  .page-heading > .primary,
+  .project-heading > .secondary {
+    width: 100%;
+    max-width: none;
+    min-height: 48px;
+    font-size: 15px;
+    margin: 0;
+  }
+  .page-heading p:last-child,
+  .project-heading p:last-child {
+    font-size: 14px;
+  }
+  .primary,
+  .secondary,
+  .danger,
+  .section-heading > .primary {
+    min-height: 48px;
+    font-size: 14px;
+    padding: 12px 16px;
+  }
+  .icon-button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .eyebrow,
+  .stat small,
+  .car-meta {
+    font-size: 12px;
+    letter-spacing: 0.8px;
+  }
+  .stat {
+    padding: 18px 14px;
+  }
+  .stat strong {
+    font-size: 25px;
+  }
+  .stat > span {
+    display: none;
+  }
+  .section-heading {
+    flex-wrap: wrap;
+  }
+  .section-heading h2 {
+    font-size: 17px;
+  }
+  .section-heading > .primary {
+    width: 100%;
+  }
+  .search {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 0 12px;
+  }
+  .search input {
+    min-height: 44px;
+    width: 100%;
+    font-size: 16px;
+  }
+  .car-grid {
+    grid-template-columns: 1fr;
+  }
+  .car-body h3 {
+    font-size: 25px;
+  }
+  .car-footer small,
+  .progress-label,
+  .visual-label small,
+  .photo-hint {
+    font-size: 12px;
+  }
+  .car-footer strong {
+    font-size: 20px;
+  }
+  .pill {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+  .filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    max-width: 100%;
+    width: 100%;
+    padding-bottom: 5px;
+    gap: 5px;
+  }
+  .filters button {
+    min-height: 44px;
+    font-size: 14px;
+    padding: 10px 13px;
+    flex-shrink: 0;
+  }
+  .tabs {
+    gap: 16px;
+    overflow-x: auto;
+  }
+  .tabs button {
+    font-size: 14px;
+    min-height: 48px;
+    white-space: nowrap;
+  }
+  .tabs span {
+    font-size: 12px;
+  }
+  .item-row {
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr) 44px;
+    gap: 10px;
+    padding: 18px 14px;
+  }
+  .item-icon {
+    width: 38px;
+    height: 38px;
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .item-details {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+  }
+  .item-details strong {
+    font-size: 16px;
+  }
+  .item-details small,
+  .warranty {
+    font-size: 13px;
+    line-height: 1.7;
+  }
+  .item-row > .icon-button {
+    grid-column: 3;
+    grid-row: 1;
+    padding: 10px;
+  }
+  .item-price {
+    grid-column: 2;
+    grid-row: 2;
+    font-size: 15px;
+    margin: 0;
+  }
+  .status-select,
+  .item-row > .pill {
+    grid-column: 2 / 4;
+    grid-row: 3;
+    min-height: 46px;
+    width: 100%;
+    font-size: 15px;
+    margin: 0;
+  }
+  .item-attachments {
+    display: flex;
+    grid-column: 3;
+    grid-row: 2;
+    justify-content: center;
+  }
+  .project-summary {
+    grid-template-columns: 1fr;
+  }
+  .project-summary > div:nth-child(2) {
+    display: block;
+  }
+  .project-summary .stat {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .build-progress h3 {
+    font-size: 17px;
+  }
+  .build-progress p,
+  .build-progress small {
+    font-size: 13px;
+  }
+  .field {
+    font-size: 14px;
+  }
+  .field input,
+  .field select,
+  .field textarea {
+    font-size: 16px;
+    min-height: 48px;
+  }
+  .field small {
+    font-size: 12px;
+  }
+  .field input[type='file'] {
+    font-size: 14px;
+  }
+  .modal {
+    max-height: 94dvh;
+    padding: 20px 16px;
+  }
+  .modal-actions button {
+    min-height: 48px;
+    font-size: 14px;
+  }
+  .modal-actions {
+    flex-wrap: wrap;
+  }
+  .modal-actions .danger-text {
+    font-size: 13px;
+  }
+  .checkbox {
+    font-size: 14px;
+    min-height: 44px;
+  }
+  .checkbox input {
+    width: 20px;
+    height: 20px;
+  }
+  .journal-date {
+    width: 45px;
+  }
+  .journal-date > span,
+  .journal-date small {
+    font-size: 12px;
+  }
+  .journal-title h3 {
+    font-size: 20px;
+  }
+  .journal-title small,
+  .journal-notes {
+    font-size: 14px;
+  }
+  .journal-content {
+    padding: 17px;
+  }
+  .empty p,
+  .muted,
+  .suggestion p,
+  .settings-card > p {
+    font-size: 14px;
+  }
+  .empty h3 {
+    font-size: 22px;
+  }
+  .settings-help,
+  .member small {
+    font-size: 12px;
+  }
+  .member strong {
+    font-size: 15px;
+  }
+  .auth-form > div > p:not(.eyebrow),
+  .auth-tabs button,
+  .connection-settings {
+    font-size: 14px;
+  }
+  .auth-tabs button {
+    min-height: 48px;
+  }
+  .auth-note {
+    font-size: 13px;
+  }
+  .mobile-nav button {
+    min-width: 65px;
+    min-height: 48px;
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+  .main-area {
+    padding-bottom: 82px;
+  }
+  .topbar > span {
+    font-size: 11px;
+  }
+  .connection {
+    font-size: 12px;
+  }
+  .topbar > div {
+    gap: 3px;
+  }
+  .topbar {
+    padding: 0 16px;
+  }
+  .toast {
+    bottom: 95px;
+    font-size: 14px;
+  }
+  .acquisition-summary {
+    padding: 16px;
+    font-size: 14px;
+  }
+}
+
+html:not([data-theme='dark'])
+  :is(
+    .page-heading p:last-child,
+    .project-heading p:last-child,
+    .settings-card > p,
+    .muted,
+    .eyebrow,
+    .car-meta,
+    .progress-label,
+    .journal-notes,
+    .journal-title small,
+    .field small,
+    .item-details small,
+    .warranty,
+    .build-progress p,
+    .connection,
+    .auth-form > div > p:not(.eyebrow)
+  ) {
+  color: var(--muted);
+}

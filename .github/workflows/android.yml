@@ -28,6 +28,7 @@ jobs:
       - run: echo "NDK_HOME=$ANDROID_HOME/ndk/28.2.13676358" >> "$GITHUB_ENV"
       - run: npm ci
       - run: npm run tauri android init -- --skip-targets-install --ci
+      - run: node scripts/configure-android.mjs
       - run: npm run tauri android build -- --debug --apk --target aarch64 --ci
       - uses: actions/upload-artifact@v4
         with:

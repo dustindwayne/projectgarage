@@ -31,6 +31,9 @@ export type Car = {
   color: string;
   notes: string;
   cover: string;
+  acquired_from: string;
+  purchase_price_cents: number | null;
+  acquired_on: string;
   items: Item[];
   journal: Entry[];
 };
@@ -50,6 +53,9 @@ export const emptyCar = (): Car => ({
   color: '#72806a',
   notes: '',
   cover: '',
+  acquired_from: '',
+  purchase_price_cents: null,
+  acquired_on: '',
   items: [],
   journal: [],
 });
@@ -72,10 +78,11 @@ export const progress = (car: Car) => {
   const required = car.items.filter((i) => i.required && !i.pending);
   return { done: required.filter((i) => i.status === 'installed').length, total: required.length };
 };
-export const spent = (car: Car) =>
+export const partsSpent = (car: Car) =>
   car.items
     .filter((i) => !i.pending && i.kind === 'part' && i.status !== 'needed')
     .reduce((sum, i) => sum + i.price_cents, 0);
+export const spent = (car: Car) => (car.purchase_price_cents ?? 0) + partsSpent(car);
 export const today = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;

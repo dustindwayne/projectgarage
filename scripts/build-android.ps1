@@ -13,6 +13,8 @@ if (-not (Test-Path 'src-tauri\gen\android\gradlew.bat')) {
     if ($LASTEXITCODE -ne 0) { throw 'Android initialization failed' }
 }
 $taskBuildLog = Join-Path $env:TEMP 'projectgarage-android-build.log'
+node scripts/configure-android.mjs
+if ($LASTEXITCODE -ne 0) { throw 'Android permission configuration failed' }
 npm.cmd run tauri android build -- --debug --apk --target aarch64 --ci 2>&1 | Tee-Object -FilePath $taskBuildLog
 if ($LASTEXITCODE -ne 0) {
     $taskNativeLib = Join-Path $taskRoot 'target\aarch64-linux-android\debug\libproject_garage_lib.so'

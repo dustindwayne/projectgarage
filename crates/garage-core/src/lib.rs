@@ -49,6 +49,12 @@ pub struct Car {
     pub color: String,
     pub notes: String,
     pub cover: String,
+    #[serde(default)]
+    pub acquired_from: String,
+    #[serde(default)]
+    pub purchase_price_cents: Option<i64>,
+    #[serde(default)]
+    pub acquired_on: String,
     pub items: Vec<Item>,
     pub journal: Vec<Entry>,
 }
@@ -82,6 +88,13 @@ impl Garage {
                 require_owner(owner)?;
                 valid_name(&car.name)?;
                 validate_image(&car.cover)?;
+                if car.acquired_from.len() > 200
+                    || car
+                        .purchase_price_cents
+                        .is_some_and(|price| !(0..=100_000_000).contains(&price))
+                {
+                    return Err("Enter a valid car source and purchase price".into());
+                }
                 if let Some(existing) = self.cars.iter_mut().find(|c| c.id == car.id) {
                     car.items = existing.items.clone();
                     car.journal = existing.journal.clone();
@@ -266,6 +279,9 @@ fn validate_receipt(s: &str) -> Result<(), String> {
     }
 }
 pub fn spending(car: &Car) -> i64 {
+    car.purchase_price_cents.unwrap_or(0) + parts_spending(car)
+}
+pub fn parts_spending(car: &Car) -> i64 {
     car.items
         .iter()
         .filter(|i| !i.pending && i.kind == "part" && i.status != Status::Needed)
@@ -440,6 +456,20 @@ mod tests {
                 }
             )
             .is_err());
+    }
+    #[test]
+    fn acquisition_defaults_preserve_old_cars_and_total_includes_purchase() {
+        let mut c = car();
+        assert_eq!(c.purchase_price_cents, None);
+        assert!(c.acquired_from.is_empty());
+        c.purchase_price_cents = Some(120000);
+        let mut part = item();
+        part.status = Status::Purchased;
+        c.items.push(part);
+        assert_eq!(parts_spending(&c), 12500);
+        assert_eq!(spending(&c), 132500);
+        c.purchase_price_cents = Some(0);
+        assert_eq!(spending(&c), 12500);
     }
     #[test]
     fn jobs_cannot_be_purchased_or_add_labor_costs() {

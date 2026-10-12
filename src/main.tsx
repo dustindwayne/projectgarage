@@ -39,9 +39,12 @@ import {
   isDeviceMode,
   native,
 } from './api';
-import { emptyCar, emptyItem, progress, spent, today } from './types';
+import { emptyCar, emptyItem, progress, spent, partsSpent, today } from './types';
+import { ThemeControl } from './theme';
+import { NearbyDevices } from './nearby';
 import type { Car, Item, Entry, Snapshot, Status } from './types';
 import './styles.css';
+import './mobile-theme.css';
 
 const labels: Record<Status, string> = {
   needed: 'Needed',
@@ -370,7 +373,7 @@ function App() {
                     onClick={() => setModal({ type: 'car', car: emptyCar() })}
                   >
                     <Plus size={18} />
-                    Add a project
+                    Add car
                   </button>
                 )}
               </div>
@@ -516,6 +519,25 @@ function App() {
                 <CarVisual car={car} />
                 <div>
                   <Stat label="TOTAL SPENT" value={money(spent(car))} icon={<Receipt />} />
+                  <div className="acquisition-summary">
+                    <span>
+                      Car purchase{' '}
+                      <strong>
+                        {car.purchase_price_cents == null
+                          ? 'Not recorded'
+                          : money(car.purchase_price_cents)}
+                      </strong>
+                    </span>
+                    <span>
+                      Parts purchased <strong>{money(partsSpent(car))}</strong>
+                    </span>
+                    {car.acquired_from && (
+                      <p>
+                        From {car.acquired_from}
+                        {car.acquired_on ? ` · ${formatDate(car.acquired_on)}` : ''}
+                      </p>
+                    )}
+                  </div>
                   <div className="build-progress">
                     <h3>
                       {progress(car).total > 0 && progress(car).done === progress(car).total
@@ -553,7 +575,7 @@ function App() {
                   onClick={() => setTab('approval')}
                 >
                   <Clock3 size={17} />
-                  Suggestions <span>{car.items.filter((i) => i.pending).length}</span>
+                  Pending approval <span>{car.items.filter((i) => i.pending).length}</span>
                 </button>
               </div>
               {tab === 'parts' && (
@@ -590,6 +612,17 @@ function App() {
                           disabled={disabled}
                           onEdit={() => setModal({ type: 'item', carId: car.id, item: i })}
                           onStatus={async (status) => {
+                            if (
+                              status === 'purchased' &&
+                              (!i.purchased_on || !i.seller || !i.price_cents)
+                            ) {
+                              setModal({
+                                type: 'item',
+                                carId: car.id,
+                                item: { ...i, status, purchased_on: i.purchased_on || today() },
+                              });
+                              return;
+                            }
                             try {
                               await mutate({
                                 type: 'set_status',
@@ -755,7 +788,7 @@ function App() {
                 <div>
                   <p className="eyebrow">KEEP THE PAPER TRAIL</p>
                   <h1>
-                    Money into metal<span className="heading-dot">.</span>
+                    Spending<span className="heading-dot">.</span>
                   </h1>
                   <p>Every purchase, receipt, and warranty has a home.</p>
                 </div>
@@ -783,6 +816,20 @@ function App() {
                       <ChevronRight size={16} />
                     </button>
                     <strong>{money(spent(c))}</strong>
+                  </div>
+                  <div className="acquisition-summary">
+                    <span>
+                      Car purchase{' '}
+                      <strong>
+                        {c.purchase_price_cents == null
+                          ? 'Not recorded'
+                          : money(c.purchase_price_cents)}
+                      </strong>
+                    </span>
+                    <span>
+                      Parts purchased <strong>{money(partsSpent(c))}</strong>
+                    </span>
+                    {c.acquired_from && <p>From {c.acquired_from}</p>}
                   </div>
                   {c.items
                     .filter((i) => !i.pending && i.kind === 'part' && i.status !== 'needed')
@@ -1116,6 +1163,7 @@ function DeviceWelcome({
       </section>
       <section className="auth-form">
         <div>
+          <ThemeControl />
           <p className="eyebrow">WELCOME TO PROJECT GARAGE</p>
           <h2>Make yourself at home.</h2>
           <p>
@@ -1237,6 +1285,7 @@ function Auth({
       </section>
       <section className="auth-form">
         <div>
+          <ThemeControl />
           <p className="eyebrow">WELCOME TO PROJECT GARAGE</p>
           <h2>{mode === 'register' ? 'Make yourself at home.' : 'Back to the garage.'}</h2>
           <p>
@@ -1417,6 +1466,12 @@ function SettingsPage({
         </div>
       </div>
       <div className="settings-grid">
+        <section className="settings-card">
+          <h2>Appearance</h2>
+          <p>Choose what feels comfortable. System follows your device’s appearance.</p>
+          <ThemeControl />
+        </section>
+        <NearbyDevices />
         <section className="settings-card">
           <h2>
             <Settings size={19} />
@@ -1667,6 +1722,11 @@ function ModalView({
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [car, setCar] = useState(modal.type === 'car' ? { ...modal.car } : emptyCar()),
+    [carPrice, setCarPrice] = useState(
+      modal.type === 'car' && modal.car.purchase_price_cents != null
+        ? (modal.car.purchase_price_cents / 100).toFixed(2)
+        : '',
+    ),
     [item, setItem] = useState(modal.type === 'item' ? { ...modal.item } : emptyItem()),
     [price, setPrice] = useState(
       modal.type === 'item' ? (modal.item.price_cents / 100).toFixed(2) : '0.00',
@@ -1717,7 +1777,7 @@ function ModalView({
           {modal.type === 'car'
             ? car.id
               ? 'Car details'
-              : 'A new project.'
+              : 'Add car'
             : modal.type === 'item'
               ? item.id
                 ? 'Part & work details'
@@ -1725,7 +1785,7 @@ function ModalView({
                   ? 'Add to the build'
                   : 'Suggest for owner approval'
               : modal.type === 'entry'
-                ? 'Another step forward.'
+                ? 'Add journal entry'
                 : modal.type === 'confirm'
                   ? modal.title
                   : 'Build photo'}
@@ -1775,8 +1835,20 @@ function ModalView({
             setSaving(true);
             setError('');
             try {
-              if (modal.type === 'car') await onSave({ type: 'save_car', car });
-              else if (modal.type === 'item') {
+              if (modal.type === 'car') {
+                const amount = carPrice.trim() === '' ? null : Number(carPrice);
+                if (amount !== null && (!Number.isFinite(amount) || amount < 0))
+                  throw new Error('Enter a valid car purchase price');
+                await onSave({
+                  type: 'save_car',
+                  car: {
+                    ...car,
+                    purchase_price_cents: amount === null ? null : Math.round(amount * 100),
+                    acquired_from: car.acquired_from ?? '',
+                    acquired_on: car.acquired_on ?? '',
+                  },
+                });
+              } else if (modal.type === 'item') {
                 const amount = Number(price);
                 if (!Number.isFinite(amount) || amount < 0) throw new Error('Enter a valid price');
                 await onSave({
@@ -1838,6 +1910,38 @@ function ModalView({
                     type="color"
                     value={car.color}
                     onChange={(e) => setCar({ ...car, color: e.target.value })}
+                  />
+                </Field>
+              </div>
+              <h3 className="acquisition-heading">How this build started</h3>
+              <Field label="Where the car came from">
+                <input
+                  maxLength={200}
+                  value={car.acquired_from ?? ''}
+                  onChange={(e) => setCar({ ...car, acquired_from: e.target.value })}
+                  placeholder="Private seller, auction, dealership, family…"
+                />
+              </Field>
+              <div className="form-grid">
+                <Field
+                  label={`Initial purchase price (${snapshot.garage.currency})`}
+                  hint="Leave blank if unknown. Enter 0 for a free car."
+                >
+                  <input
+                    type="number"
+                    min="0"
+                    max="1000000"
+                    step="0.01"
+                    value={carPrice}
+                    onChange={(e) => setCarPrice(e.target.value)}
+                    placeholder="Not recorded"
+                  />
+                </Field>
+                <Field label="Car purchase date">
+                  <input
+                    type="date"
+                    value={car.acquired_on ?? ''}
+                    onChange={(e) => setCar({ ...car, acquired_on: e.target.value })}
                   />
                 </Field>
               </div>
@@ -2158,10 +2262,12 @@ function ModalView({
               {saving
                 ? 'Saving…'
                 : modal.type === 'entry'
-                  ? 'Save this moment'
+                  ? 'Save journal entry'
                   : modal.type === 'item' && !owner && !item.id
                     ? 'Send suggestion'
-                    : 'Save to garage'}
+                    : modal.type === 'car'
+                      ? 'Save car'
+                      : 'Save item'}
               <Check size={16} />
             </button>
           </div>
