@@ -71,8 +71,7 @@ pub fn run() {
             nearby_devices,
             set_nearby_enabled,
             updates::check_github_update,
-            updates::install_github_update,
-            updates::forget_update_token
+            updates::install_github_update
         ])
         .run(tauri::generate_context!())
         .expect("Run Project Garage");

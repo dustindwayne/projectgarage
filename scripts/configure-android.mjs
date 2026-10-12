@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, copyFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, copyFileSync, cpSync } from 'node:fs';
 const manifest = 'src-tauri/gen/android/app/src/main/AndroidManifest.xml';
 let xml = readFileSync(manifest, 'utf8');
 if (!xml.includes('android.permission.ACCESS_LOCAL_NETWORK'))
@@ -42,3 +42,18 @@ if (!source.includes('projectGarageDiscoveryPermission')) {
   source = source.replace(/}\s*$/, method + '\n}');
 }
 writeFileSync(activity, source);
+
+// Keep packaged launcher branding and dark launch surfaces aligned with the app.
+cpSync('src-tauri/icons/android', 'src-tauri/gen/android/app/src/main/res', { recursive: true });
+writeFileSync(
+  'src-tauri/gen/android/app/src/main/res/values/ic_launcher_background.xml',
+  '<resources><color name="ic_launcher_background">#111111</color></resources>',
+);
+const nightTheme = 'src-tauri/gen/android/app/src/main/res/values-night/themes.xml';
+let night = readFileSync(nightTheme, 'utf8');
+if (!night.includes('android:windowBackground'))
+  night = night.replace(
+    '</style>',
+    '<item name="android:windowBackground">#090909</item><item name="android:statusBarColor">#090909</item><item name="android:navigationBarColor">#090909</item></style>',
+  );
+writeFileSync(nightTheme, night);

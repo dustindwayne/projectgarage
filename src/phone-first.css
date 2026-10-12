@@ -617,3 +617,148 @@ html[data-theme='dark'] .filters button.active {
     font-size: 28px;
   }
 }
+.brand {
+  background: var(--paper);
+  --logo-ink: var(--ink);
+}
+.brand > span {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.brand svg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  inset: 0;
+  display: block;
+}
+.sidebar .brand {
+  background: #111;
+  --logo-ink: #fff;
+}
+.phone-header .brand {
+  width: 178px;
+  height: 42px;
+}
+.phone-header > span {
+  display: none;
+}
+html[data-theme='dark']
+  :is(.mobile-nav button.active, .spending-stats .spend-total, .filters button.active) {
+  background: #242424;
+}
+html[data-theme='dark'] .sidebar {
+  background: #111111;
+  border-right: 1px solid #303030;
+}
+html[data-theme='dark']
+  :is(
+    .avatar,
+    .item-icon,
+    .item-icon.done,
+    .pill.neutral,
+    .car-visual,
+    .add-card,
+    .shop-note,
+    .auth-story,
+    .splash,
+    .invite-code
+  ) {
+  background: #242424;
+  color: #dddddd;
+  border-color: #353535;
+}
+html[data-theme='dark'] :is(.pill, .status-select) {
+  background: #242424;
+  color: #dedede;
+}
+html[data-theme='dark'] .car-visual {
+  background-image: none !important;
+}
+html[data-theme='dark']
+  :is(.workspace, .sidebar nav, .sidebar-bottom, .shop-note, .car-meta, .journal-date) {
+  color: var(--muted);
+  border-color: var(--line);
+}
+html[data-theme='dark'] .sidebar nav button.active {
+  background: #242424;
+  color: var(--ink);
+  border-left: 3px solid var(--accent);
+}
+html[data-theme='dark'] .brand {
+  background: transparent;
+}
+@media (max-width: 959px) {
+  .phone-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .tabs {
+    top: 59px;
+  }
+  .project-summary .build-progress small {
+    display: none;
+  }
+  .project-summary .build-progress {
+    padding-top: 0;
+  }
+  .project-summary .stat {
+    padding-bottom: 8px;
+  }
+  .project-heading {
+    gap: 10px;
+  }
+  .project-heading > .secondary {
+    align-self: flex-start;
+  }
+  .car-body h3 {
+    font-size: 23px;
+  }
+  .page-heading > .primary {
+    width: auto;
+    align-self: flex-start;
+    min-width: 128px;
+  }
+  .mobile-nav button.active svg {
+    color: var(--accent);
+  }
+  .garage-stats {
+    margin-bottom: 20px;
+  }
+  .section-heading {
+    margin-bottom: 16px;
+  }
+  .phone-header .brand {
+    width: 220px;
+  }
+  .page-heading p:last-child {
+    line-height: 1.5;
+  }
+  .project-open .phone-header {
+    display: none;
+  }
+  .project-open .tabs {
+    top: 0;
+  }
+}
+html[data-theme='dark'] .garage-stats {
+  background: transparent;
+}
+html[data-theme='dark'] .auth-story {
+  background: #111111;
+}
+html[data-theme='dark'] .sidebar .brand {
+  background: #111111;
+}
+html[data-theme='dark'] :is(.car-outline, .visual-label, .visual-label small) {
+  color: #b5b5b5;
+  filter: none;
+}
+html[data-theme='dark']
+  :is(.search, .search input, .project-heading > .secondary, .secondary:hover:not(:disabled)) {
+  background: var(--paper);
+  color: var(--ink);
+  border-color: var(--line);
+}

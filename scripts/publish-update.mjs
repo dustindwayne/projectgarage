@@ -22,7 +22,7 @@ writeFileSync(
   JSON.stringify(
     {
       version,
-      notes: 'Mobile-first navigation, accent colors, per-project journals, filtered spending, and OpenAI / Claude / Grok garage assistants.',
+      notes: 'Token-free public updates, new accent-aware logo, true black and charcoal dark mode, and phone-first project screens.',
       platforms,
     },
     null,

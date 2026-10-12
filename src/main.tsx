@@ -44,6 +44,7 @@ import { ThemeControl, AccentControl } from './theme';
 import { NearbyDevices } from './nearby';
 import { UpdatesProvider, UpdatesCard, UpdatesBanner } from './updates';
 import type { Car, Item, Entry, Snapshot, Status } from './types';
+import logo from '../public/project-garage-logo.svg?raw';
 import './styles.css';
 import './mobile-theme.css';
 import './phone-first.css';
@@ -66,7 +67,15 @@ type Modal =
 function Brand() {
   return (
     <div className="brand">
-      <img src="/project-garage-logo.png" alt="project garage" />
+      <span
+        role="img"
+        aria-label="Project Garage"
+        dangerouslySetInnerHTML={{
+          __html: logo
+            .replaceAll('#C4FF00', 'var(--accent)')
+            .replace(/#(?:FFFFFF|FFF|ffffff|fff)(?=[\"\'])/g, 'var(--logo-ink)'),
+        }}
+      />
     </div>
   );
 }

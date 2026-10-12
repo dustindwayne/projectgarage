@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{collections::HashMap, sync::Mutex, time::Duration};
 use tauri::Manager;
-const BASE: &str = "https://api.github.com/repos/dustindwayne/projectgarage/contents";
+const BASE: &str = "https://raw.githubusercontent.com/dustindwayne/projectgarage-updates/main";
 const LIMIT: u64 = 100_000_000;
 #[derive(Clone, Deserialize, Serialize)]
 pub struct Package {
@@ -27,7 +27,6 @@ pub struct UpdateInfo {
 }
 pub struct Updates {
     client: reqwest::Client,
-    token: Mutex<Option<String>>,
     manifest: Mutex<Option<Manifest>>,
     busy: std::sync::atomic::AtomicBool,
 }
@@ -40,35 +39,29 @@ impl Updates {
                 .redirect(reqwest::redirect::Policy::none())
                 .build()
                 .expect("Build HTTPS client"),
-            token: Mutex::new(None),
             manifest: Mutex::new(None),
             busy: std::sync::atomic::AtomicBool::new(false),
         }
     }
     async fn request(&self, path: &str) -> Result<reqwest::Response, String> {
-        let mut request = self
-            .client
-            .get(format!("{BASE}/{path}?ref=main"))
-            .header("Accept", "application/vnd.github.raw+json")
-            .header("X-GitHub-Api-Version", "2022-11-28");
-        let token = self.token.lock().unwrap().clone();
-        if let Some(token) = token {
-            request = request.bearer_auth(token);
-        }
+        let request = self.client.get(format!("{BASE}/{path}"));
         let response = request
             .send()
             .await
             .map_err(|_| "Could not reach GitHub. Check your internet connection.".to_string())?;
-        match response.status().as_u16(){200=>Ok(response),401|403=>Err("GitHub access was denied. Use a read-only token with Contents access to this repository, or try again after the rate limit resets.".into()),404=>Err("The repository is private or the update is not published yet. Add a read-only GitHub token for this repository.".into()),_=>Err(format!("GitHub could not supply the update ({}). Try again later.",response.status()))}
-    }
-    pub async fn check(&self, token: Option<String>) -> Result<UpdateInfo, String> {
-        if let Some(token) = token {
-            let token = token.trim();
-            if token.is_empty() || token.len() > 512 || token.contains(char::is_whitespace) {
-                return Err("Enter a valid GitHub token".into());
-            }
-            *self.token.lock().unwrap() = Some(token.into());
+        match response.status().as_u16() {
+            200 => Ok(response),
+            404 => Err("The update channel is not available yet. Try again later.".into()),
+            401 | 403 => Err(
+                "The public download channel is temporarily unavailable. Try again later.".into(),
+            ),
+            _ => Err(format!(
+                "GitHub could not supply the update ({}). Try again later.",
+                response.status()
+            )),
         }
+    }
+    pub async fn check(&self) -> Result<UpdateInfo, String> {
         let response = self.request("downloads/latest.json").await?;
         if response.content_length().is_some_and(|n| n > 100_000) {
             return Err("Invalid update manifest".into());
@@ -97,9 +90,6 @@ impl Updates {
         };
         *self.manifest.lock().unwrap() = Some(manifest);
         Ok(info)
-    }
-    pub fn forget_token(&self) {
-        *self.token.lock().unwrap() = None;
     }
     async fn download(&self, app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
         let manifest = self
@@ -203,15 +193,8 @@ fn verify_digest(size: u64, digest: &str, package: &Package) -> Result<(), Strin
     }
 }
 #[tauri::command]
-pub async fn check_github_update(
-    updates: tauri::State<'_, Updates>,
-    token: Option<String>,
-) -> Result<UpdateInfo, String> {
-    updates.check(token).await
-}
-#[tauri::command]
-pub fn forget_update_token(updates: tauri::State<'_, Updates>) {
-    updates.forget_token();
+pub async fn check_github_update(updates: tauri::State<'_, Updates>) -> Result<UpdateInfo, String> {
+    updates.check().await
 }
 #[tauri::command]
 pub async fn install_github_update(
@@ -354,13 +337,11 @@ mod tests {
         assert!(verify_digest(2, &package.sha256, &package).is_err());
     }
     #[test]
-    #[ignore = "Requires a repository read token and live GitHub access"]
+    #[ignore = "Requires live access to the public update channel"]
     fn github_channel_and_binary_download_match() {
         tauri::async_runtime::block_on(async {
             let updates = Updates::new();
-            let token = std::env::var("PROJECT_GARAGE_TEST_TOKEN")
-                .expect("Set the repository read token for this integration test");
-            let info = updates.check(Some(token)).await.unwrap();
+            let info = updates.check().await.unwrap();
             assert!(info.package_available);
             let manifest = updates.manifest.lock().unwrap().clone().unwrap();
             let package = manifest.platforms.get(&platform()).unwrap();

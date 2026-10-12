@@ -15,9 +15,8 @@ type State = {
   busy: boolean;
   error: string;
   message: string;
-  check: (token?: string) => Promise<void>;
+  check: () => Promise<void>;
   install: () => Promise<void>;
-  forget: () => Promise<void>;
 };
 const Context = createContext<State | null>(null);
 export function UpdatesProvider({ children }: { children: React.ReactNode }) {
@@ -26,14 +25,14 @@ export function UpdatesProvider({ children }: { children: React.ReactNode }) {
     [busy, setBusy] = useState(false),
     [error, setError] = useState(''),
     [message, setMessage] = useState('');
-  async function check(token?: string) {
+  async function check() {
     localStorage.setItem('pg-last-update-check', String(Date.now()));
     setBusy(true);
     setError('');
     setMessage('');
     try {
       const { invoke } = await import('@tauri-apps/api/core');
-      const result = await invoke<Update>('check_github_update', { token: token?.trim() || null });
+      const result = await invoke<Update>('check_github_update');
       setInfo(result);
       setMessage(
         result.available
@@ -70,11 +69,6 @@ export function UpdatesProvider({ children }: { children: React.ReactNode }) {
       setBusy(false);
     }
   }
-  async function forget() {
-    const { invoke } = await import('@tauri-apps/api/core');
-    await invoke('forget_update_token');
-    setMessage('GitHub access cleared for this session.');
-  }
   useEffect(() => {
     if (native)
       void import('@tauri-apps/api/app')
@@ -89,9 +83,7 @@ export function UpdatesProvider({ children }: { children: React.ReactNode }) {
       void check();
   }, []);
   return (
-    <Context.Provider
-      value={{ installedVersion, info, busy, error, message, check, install, forget }}
-    >
+    <Context.Provider value={{ installedVersion, info, busy, error, message, check, install }}>
       {children}
     </Context.Provider>
   );
@@ -111,7 +103,6 @@ export function UpdatesBanner({ onOpen }: { onOpen: () => void }) {
 }
 export function UpdatesCard() {
   const state = useContext(Context),
-    [token, setToken] = useState(''),
     [automatic, setAutomatic] = useState(localStorage.getItem('pg-auto-updates') !== 'false');
   if (!native || !state) return null;
   return (
@@ -138,26 +129,7 @@ export function UpdatesCard() {
         />
         Check for updates when opening the app
       </label>
-      <details className="connection-settings">
-        <summary>Private repository access</summary>
-        <label className="field">
-          <span>Read-only GitHub token</span>
-          <input
-            type="password"
-            autoComplete="off"
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
-            placeholder="Token with Contents read access"
-          />
-          <small>
-            Needed while the repository is private. Select only dustindwayne/projectgarage and
-            Contents: read. Kept in memory until the app closes; never stored with your garage.
-          </small>
-        </label>
-        <button className="text-link" disabled={state.busy} onClick={() => void state.forget()}>
-          Clear GitHub access
-        </button>
-      </details>
+      <p className="settings-help">Public update downloads. No GitHub account or token needed.</p>
       {state.error && (
         <p className="form-error" role="alert">
           {state.error}
@@ -170,15 +142,7 @@ export function UpdatesCard() {
       )}
       {state.info?.available && <p className="journal-notes">{state.info.notes}</p>}
       <div className="button-row">
-        <button
-          className="secondary"
-          disabled={state.busy}
-          onClick={async () => {
-            const value = token;
-            setToken('');
-            await state.check(value);
-          }}
-        >
+        <button className="secondary" disabled={state.busy} onClick={() => void state.check()}>
           <RefreshCw size={16} />
           {state.busy ? 'Working…' : 'Check for updates'}
         </button>

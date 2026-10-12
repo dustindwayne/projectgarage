@@ -2622,7 +2622,7 @@ dependencies = [
 
 [[package]]
 name = "project-garage"
-version = "0.3.0"
+version = "0.3.2"
 dependencies = [
  "garage-server",
  "reqwest 0.12.28",

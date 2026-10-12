@@ -1,16 +1,16 @@
 {
-  "version": "0.3.0",
-  "notes": "Mobile-first navigation, accent colors, per-project journals, filtered spending, and OpenAI / Claude / Grok garage assistants.",
+  "version": "0.3.2",
+  "notes": "Token-free public updates, new accent-aware logo, true black and charcoal dark mode, and phone-first project screens.",
   "platforms": {
     "android-aarch64": {
       "path": "downloads/project-garage-arm64-debug.apk",
-      "sha256": "c39117ee29c6b4ee9b747d425a098173e819b15894975559d17241c5a251a37e",
-      "size": 29188782
+      "sha256": "7983e997c49d9a7c722a5b065dbcddd9ba52606e629afb08a407692dbad28b85",
+      "size": 29095841
     },
     "windows-x86_64": {
       "path": "downloads/project-garage-windows.exe",
-      "sha256": "6f7acccab45eadc88d9e7d608f1d7125d7d214f4a0324d7ba006070f9a4c55f5",
-      "size": 14614528
+      "sha256": "1c9cb0749e2fba01ec129174843c753188369884d7d98b34c8798e066e32f9fa",
+      "size": 14615552
     }
   }
 }

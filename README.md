@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/project-garage-logo.png" alt="project garage" width="760" />
+  <img src="public/project-garage-readme.svg" alt="project garage" width="760" />
 </p>
 
 # Your cars. Your work. Your garage.
@@ -41,11 +41,11 @@ Discovery uses UDP port 39073. Guest-network isolation or a firewall can prevent
 
 ## In-app updates from GitHub
 
-Install version **0.3.0** (or the earlier **0.2.0**) once to enable updates. Open **Settings → App updates** to check GitHub and download a newer version. Optional startup checks run at most every four hours and show a banner when a newer installer is available.
+Install **0.3.2** once to switch to token-free updates. Open **Settings → App updates** to check and download a newer version. Optional startup checks run at most every four hours. GitHub accounts and tokens are no longer required.
 
-The update channel is `downloads/latest.json` on `main`. Downloads come from this repository through GitHub's HTTPS API, with expected size and SHA-256 verified before installation. Android additionally checks the package identity, newer version code, and matching APK signer before opening its system installer for your approval. Windows downloads its new executable, closes the app, replaces it, and restarts. Garage data stays in the app's data directory.
+Installers and the manifest are published in the public [projectgarage-updates repository](https://github.com/dustindwayne/projectgarage-updates), on **main**. App source stays private in this repository. The app reads the public GitHub download feed over HTTPS without embedding or storing any GitHub credential. Size and SHA-256 checks remain mandatory. Android additionally checks package identity, newer version code, and the existing APK signer before opening the system installer. Windows closes, replaces its executable, and restarts. Garage data stays in the app's separate data directory. macOS and Linux installers are not yet published.
 
-While the repository is **private**, supply a fine-grained GitHub token for **dustindwayne/projectgarage**, with **Contents: read-only**, under **Private repository access**. Tokens are kept in native memory for the session and are cleared when the app closes or you select **Clear GitHub access**. They are not embedded in builds, stored in the garage, or committed to GitHub. Public repositories need no token. macOS and Linux installers are not published to this update channel yet.
+Older builds used the private source repository for updates, so install the new APK or Windows executable once to move to the public channel.
 
 To publish the next update, increase the matching app versions in `package.json`, `src-tauri/Cargo.toml`, and `src-tauri/tauri.conf.json`; build Android and Windows; then run:
 
@@ -167,3 +167,7 @@ The assistant can answer garage questions and create, edit, delete, or update ca
 Changes use a bounded batch: invalid actions or a changed garage revision reject the whole batch. The activity view records the last ten requests in the current session. New cars must be created first before requesting their parts, because saved car IDs are assigned locally. AI has no background autonomous access and only acts when you press **Run request**. Browser previews do not receive API keys; this feature runs in installed apps. No Android local server is introduced.
 
 Provider request formats follow the [OpenAI Chat Completions API](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create), [Claude Messages API](https://platform.claude.com/docs/en/api/messages/create), and [xAI Chat Completions API](https://docs.x.ai/developers/rest-api-reference/inference/chat-completions). Provider access was not tested against live accounts in development; no provider keys were available. Rust tests cover attachment preservation, missing IDs, omitted identity/media, atomic rollback, permissions, persistence, discovery, and update verification.
+
+The 0.3.2 branding update uses the supplied SVG wordmark and its open-hood car as the launcher icon. In-app logo colors follow your selected accent and theme. Dark mode uses black (#090909) and neutral charcoal (#181818 / #242424); accent colors do not tint its surfaces.
+
+After building and generating the manifest, run `scripts/publish-public-updates.ps1` to publish only the fixed installer/manifest allowlist to the public update repository. It does not copy the source checkout or garage data.

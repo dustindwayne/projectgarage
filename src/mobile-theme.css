@@ -1,11 +1,11 @@
 html[data-theme='dark'] {
   color-scheme: dark;
-  --ink: #e8eee4;
-  --background: #151b17;
-  --paper: #222b23;
-  --soft: #2c382c;
-  --line: #3c4939;
-  --muted: #b0bba6;
+  --ink: #f2f2f2;
+  --background: #090909;
+  --paper: #181818;
+  --soft: #242424;
+  --line: #353535;
+  --muted: #ababab;
 }
 .theme-control {
   display: flex;
@@ -153,7 +153,7 @@ html[data-theme='dark']
     .icon-button:hover
   ) {
   background: var(--soft);
-  color: #c3d5b3;
+  color: #e2e2e2;
 }
 html[data-theme='dark'] :is(.add-card, .back, .filters button, .tabs button, .icon-button) {
   color: var(--muted);
@@ -162,31 +162,31 @@ html[data-theme='dark'] :is(.tabs button.active, .heading-dot, .text-link) {
   color: var(--lime);
 }
 html[data-theme='dark'] :is(.pill.needed, .status-select.needed, .approval-note, .offline-banner) {
-  background: #403a23;
+  background: #242424;
   color: #e4ca7b;
 }
 html[data-theme='dark'] :is(.pill.purchased, .status-select.purchased) {
-  background: #333549;
+  background: #242424;
   color: #c6c6ee;
 }
 html[data-theme='dark'] :is(.pill.received, .status-select.received) {
-  background: #263d46;
+  background: #242424;
   color: #abd5e5;
 }
 html[data-theme='dark'] :is(.pill.installed, .status-select.installed, .pill.neutral) {
-  background: #34452b;
-  color: #c3dda2;
+  background: #242424;
+  color: #e5e5e5;
 }
 html[data-theme='dark'] :is(.form-error, .error-banner) {
-  background: #4c2a24;
+  background: #242424;
   color: #f5b1a0;
 }
 html[data-theme='dark'] .primary {
   background: var(--lime);
-  color: #1c2514;
+  color: var(--accent-ink);
 }
 html[data-theme='dark'] .primary svg {
-  color: #1c2514;
+  color: var(--accent-ink);
 }
 html[data-theme='dark'] .primary:hover:not(:disabled) {
   background: #d1ff34;
