@@ -1,5 +1,6 @@
 use tauri::Manager;
 mod nearby;
+mod updates;
 #[tauri::command]
 fn nearby_devices(service: tauri::State<'_, nearby::Nearby>) -> nearby::Snapshot {
     service.snapshot()
@@ -49,6 +50,7 @@ fn export_backup(app: tauri::AppHandle, contents: String) -> Result<String, Stri
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(updates::plugin())
         .setup(|app| {
             let path = app.path().app_data_dir()?.join("garage.db");
             app.manage(garage_server::DeviceGarage::open(&path).map_err(std::io::Error::other)?);
@@ -58,13 +60,17 @@ pub fn run() {
                 .and_then(|value| serde_json::from_str::<bool>(&value).ok())
                 .unwrap_or(true);
             app.manage(nearby::Nearby::start(enabled));
+            app.manage(updates::Updates::new());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             export_backup,
             device_request,
             nearby_devices,
-            set_nearby_enabled
+            set_nearby_enabled,
+            updates::check_github_update,
+            updates::install_github_update,
+            updates::forget_update_token
         ])
         .run(tauri::generate_context!())
         .expect("Run Project Garage");

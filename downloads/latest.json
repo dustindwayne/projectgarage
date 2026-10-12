@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "notes": "GitHub in-app updates for Android and Windows. Your garage stays on your device.",
+  "platforms": {
+    "android-aarch64": {
+      "path": "downloads/project-garage-arm64-debug.apk",
+      "sha256": "faf0b122ade8b1dd4f0d6037b221ee795bf532ed99c6e1ce948f0ad3a09ab1e5",
+      "size": 29003470
+    },
+    "windows-x86_64": {
+      "path": "downloads/project-garage-windows.exe",
+      "sha256": "e60f9a8bfd823c058634e9cd1abb6514e9dd7b08d4c65e90f391b3a64bb610f9",
+      "size": 14460928
+    }
+  }
+}

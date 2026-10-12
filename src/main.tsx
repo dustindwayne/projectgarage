@@ -42,6 +42,7 @@ import {
 import { emptyCar, emptyItem, progress, spent, partsSpent, today } from './types';
 import { ThemeControl } from './theme';
 import { NearbyDevices } from './nearby';
+import { UpdatesProvider, UpdatesCard, UpdatesBanner } from './updates';
 import type { Car, Item, Entry, Snapshot, Status } from './types';
 import './styles.css';
 import './mobile-theme.css';
@@ -347,6 +348,12 @@ function App() {
             You're viewing your saved garage. Reconnect to make changes.
           </div>
         )}
+        <UpdatesBanner
+          onOpen={() => {
+            setPage('settings');
+            setSelected('');
+          }}
+        />
         {error && (
           <div role="alert" className="error-banner">
             {error}
@@ -1472,6 +1479,7 @@ function SettingsPage({
           <ThemeControl />
         </section>
         <NearbyDevices />
+        <UpdatesCard />
         <section className="settings-card">
           <h2>
             <Settings size={19} />
@@ -2276,4 +2284,8 @@ function ModalView({
     </dialog>
   );
 }
-createRoot(document.getElementById('root')!).render(<App />);
+createRoot(document.getElementById('root')!).render(
+  <UpdatesProvider>
+    <App />
+  </UpdatesProvider>,
+);

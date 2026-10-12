@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, copyFileSync } from 'node:fs';
 const manifest = 'src-tauri/gen/android/app/src/main/AndroidManifest.xml';
 let xml = readFileSync(manifest, 'utf8');
 if (!xml.includes('android.permission.ACCESS_LOCAL_NETWORK'))
@@ -7,6 +7,17 @@ if (!xml.includes('android.permission.ACCESS_LOCAL_NETWORK'))
     '<uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />',
   );
 writeFileSync(manifest, xml);
+if (!xml.includes('android.permission.REQUEST_INSTALL_PACKAGES')) {
+  xml = xml.replace(
+    '<uses-permission android:name="android.permission.INTERNET" />',
+    '<uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />',
+  );
+  writeFileSync(manifest, xml);
+}
+copyFileSync(
+  'src-tauri/android/GarageUpdatesPlugin.kt',
+  'src-tauri/gen/android/app/src/main/java/com/projectgarage/mobile/GarageUpdatesPlugin.kt',
+);
 const activity = 'src-tauri/gen/android/app/src/main/java/com/projectgarage/mobile/MainActivity.kt';
 let source = readFileSync(activity, 'utf8');
 if (!source.includes('projectGarageDiscoveryPermission')) {

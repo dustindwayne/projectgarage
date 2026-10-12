@@ -2,6 +2,10 @@
 
 [Download Project Garage for Android (ARM64 debug APK)](project-garage-arm64-debug.apk)
 
+[Download Project Garage for Windows](project-garage-windows.exe)
+
+Version **0.2.0** enables **Settings → App updates**. Install this build once; later versions can be checked, downloaded, and installed from within the app. Android opens its system installer for confirmation. Private GitHub access needs a read-only token entered in the app; it is kept only for the current session.
+
 This is a signed development build for ARM64 Android devices, not a Play Store release. Install it, enter your name, and open your garage. Cars, parts, purchase records, receipts, and progress photos are stored directly on your device through Rust and SQLite. The personal garage works offline and requires no account, local server, computer, or server address.
 
 Sharing is optional. A shared garage uses a hosted HTTPS connection for owner/staff access across devices. The personal device garage stays separate and is not uploaded automatically.

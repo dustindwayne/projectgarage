@@ -39,6 +39,22 @@ Installed desktop apps automatically listen for Project Garage on the same Wi-Fi
 
 Discovery uses UDP port 39073. Guest-network isolation or a firewall can prevent detection. On Android 17 and newer, allow the local-network permission when prompted. Discovery identifies devices; pairing, record transfer, and automatic synchronization are not implemented by this feature. Android still runs independently and does not host a local server.
 
+## In-app updates from GitHub
+
+Install version **0.2.0** once to enable updates. Open **Settings → App updates** to check GitHub and download a newer version. Optional startup checks run at most every four hours and show a banner when a newer installer is available.
+
+The update channel is `downloads/latest.json` on `main`. Downloads come from this repository through GitHub's HTTPS API, with expected size and SHA-256 verified before installation. Android additionally checks the package identity, newer version code, and matching APK signer before opening its system installer for your approval. Windows downloads its new executable, closes the app, replaces it, and restarts. Garage data stays in the app's data directory.
+
+While the repository is **private**, supply a fine-grained GitHub token for **dustindwayne/projectgarage**, with **Contents: read-only**, under **Private repository access**. Tokens are kept in native memory for the session and are cleared when the app closes or you select **Clear GitHub access**. They are not embedded in builds, stored in the garage, or committed to GitHub. Public repositories need no token. macOS and Linux installers are not published to this update channel yet.
+
+To publish the next update, increase the matching app versions in `package.json`, `src-tauri/Cargo.toml`, and `src-tauri/tauri.conf.json`; build Android and Windows; then run:
+
+```sh
+node scripts/publish-update.mjs
+```
+
+Commit the installers, checksums, and `downloads/latest.json` together and push to `main`. Build Android updates with the **same signing key** as the installed app. Keep your signing keystore backed up securely; never commit it. The current Android CI workflow produces test artifacts with its runner's own debug key and does not publish them into this update channel.
+
 ## Owner and staff access
 
 | Action                                      | Owner | Staff                 |
