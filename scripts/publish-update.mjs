@@ -39,7 +39,7 @@ writeFileSync(
     {
       version,
       notes:
-        'Garage import and export now share a single Garage backups area in Settings.',
+        'Mobile design polish: consistent padding, clearer form labels, comfortable record controls, improved dialogs and readable backup/receipt flows.',
       platforms,
       tools,
     },

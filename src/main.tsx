@@ -48,6 +48,7 @@ import logo from '../public/project-garage-logo.svg?raw';
 import './styles.css';
 import './mobile-theme.css';
 import './phone-first.css';
+import './design-polish.css';
 import { AssistantProvider, AssistantPanel, useAssistantAccess } from './assistant';
 import { Spending } from './spending';
 import { ReceiptScan } from './receipt-scan';
@@ -1428,7 +1429,7 @@ function SettingsPage({
           <h1>
             Garage settings<span className="heading-dot">.</span>
           </h1>
-          <p>A good garage has room for good people.</p>
+          <p>Make it yours. Keep your records safe.</p>
         </div>
       </div>
       <div className="settings-grid">
@@ -1438,13 +1439,6 @@ function SettingsPage({
           <ThemeControl />
           <AccentControl />
         </section>
-        <AgentAccess
-          snapshot={snapshot}
-          disabled={disabled}
-          onSnapshot={onSnapshot}
-          onNotice={onNotice}
-          onError={onError}
-        />
         <NearbyDevices snapshot={snapshot} disabled={disabled} onImport={mutate} />
         <UpdatesCard />
         <section className="settings-card">
@@ -1672,6 +1666,13 @@ function SettingsPage({
             )}
           </section>
         )}
+        <AgentAccess
+          snapshot={snapshot}
+          disabled={disabled}
+          onSnapshot={onSnapshot}
+          onNotice={onNotice}
+          onError={onError}
+        />
       </div>
     </>
   );
@@ -1738,6 +1739,7 @@ function ModalView({
   return (
     <dialog
       ref={dialogRef}
+      aria-labelledby="garage-dialog-title"
       className={`modal ${modal.type === 'photo' ? 'photo-modal' : ''}`}
       onCancel={(e) => {
         if (saving || uploading) {
@@ -1748,7 +1750,7 @@ function ModalView({
       }}
     >
       <div className="modal-heading">
-        <h2>
+        <h2 id="garage-dialog-title">
           {modal.type === 'car'
             ? car.id
               ? 'Car details'

@@ -1,4 +1,4 @@
-# Project Garage 0.5.1
+# Project Garage 0.5.2
 
 [Download Android APK](project-garage-arm64-debug.apk) · [Download Windows app](project-garage-windows.exe)
 
