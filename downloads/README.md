@@ -1,10 +1,10 @@
-# Project Garage 0.5.2
+# Project Garage 0.5.3
 
 [Download Android APK](project-garage-arm64-debug.apk) · [Download Windows app](project-garage-windows.exe)
 
 This update adds on-device receipt-image text recognition with mandatory review, spending statistics and filters, CSV exports, saved-garage import, and encrypted phone-approved Wi-Fi imports to desktop. Android exports use the system share/save chooser.
 
-Install once, then use **Settings → App updates** for future downloads. Updates use the public installer repository without a GitHub account or token. Android opens the system installer for confirmation and checks the existing signing key. Source remains private.
+Install once, then use **Settings → App updates** for future downloads. Updates use the public projectgarage repository without a GitHub account or token. Android opens the system installer for confirmation and checks the existing signing key. Source and installers now share the same public repository. Install 0.5.3 once to migrate from the retired separate update feed.
 
 The Android ARM64 APK is a signed development build. Personal garage records stay in SQLite on your device; no account, local web server, or computer is required. Optional shared garages use a hosted HTTPS service.
 

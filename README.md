@@ -57,9 +57,9 @@ Discovery uses UDP port 39073. Guest-network isolation or a firewall can prevent
 
 Install **0.3.2** once to switch to token-free updates. Open **Settings → App updates** to check and download a newer version. Optional startup checks run at most every four hours. GitHub accounts and tokens are no longer required.
 
-Installers and the manifest are published in the public [projectgarage-updates repository](https://github.com/dustindwayne/projectgarage-updates), on **main**. App source stays private in this repository. The app reads the public GitHub download feed over HTTPS without embedding or storing any GitHub credential. Size and SHA-256 checks remain mandatory. Android additionally checks package identity, newer version code, and the existing APK signer before opening the system installer. Windows closes, replaces its executable, and restarts. Garage data stays in the app's separate data directory. macOS and Linux installers are not yet published.
+App source, installers, and the update manifest are published together in the public [projectgarage repository](https://github.com/dustindwayne/projectgarage), on **main**. The app reads the public GitHub download feed over HTTPS without embedding or storing any GitHub credential. Size and SHA-256 checks remain mandatory. Android additionally checks package identity, newer version code, and the existing APK signer before opening the system installer. Windows closes, replaces its executable, and restarts. Garage data stays in the app's separate data directory. macOS and Linux installers are not yet published.
 
-Older builds used the private source repository for updates, so install the new APK or Windows executable once to move to the public channel.
+Versions through 0.5.2 used a separate updates repository, which has been retired. Install version 0.5.3 or newer once from this repository; subsequent updates use this repository automatically.
 
 To publish the next update, increase the matching app versions in `package.json`, `src-tauri/Cargo.toml`, and `src-tauri/tauri.conf.json`; build Android and Windows; then run:
 
@@ -185,7 +185,7 @@ Provider request formats follow the [OpenAI Chat Completions API](https://develo
 
 The 0.3.2 branding update uses the supplied SVG wordmark and its open-hood car as the launcher icon. In-app logo colors follow your selected accent and theme. Dark mode uses black (#090909) and neutral charcoal (#181818 / #242424); accent colors do not tint its surfaces.
 
-After building and generating the manifest, run `scripts/publish-public-updates.ps1` to publish only the fixed installer/manifest allowlist to the public update repository. It does not copy the source checkout or garage data.
+After building, run `node scripts/publish-update.mjs` to refresh installers, checksums, agent downloads, and `downloads/latest.json`. Commit them together with the matching source version and push this repository’s `main` branch. `scripts/verify-update.ps1` checks the release files before publishing. No separate update repository or GitHub builds are used.
 
 ## External agents without in-app AI setup
 

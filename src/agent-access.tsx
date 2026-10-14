@@ -3,7 +3,7 @@ import { api, native, ApiError } from './api';
 import type { Snapshot } from './types';
 import { today } from './types';
 import { AssistantSettings } from './assistant';
-export const AGENT_PROMPT = `Use the Project Garage skill to manage my garage records. Read https://raw.githubusercontent.com/dustindwayne/projectgarage-updates/main/downloads/project-garage-agent-skill.md and follow its workflow. On my desktop, use the verified garage-agent bridge to access the existing garage; do not configure AI providers in the app. If I attach a phone context file, use that data and return an importable changes file instead. Ask what I want done if I have not given a task. Only make the changes I request, preserve receipts and photos, and verify the result.`;
+export const AGENT_PROMPT = `Use the Project Garage skill to manage my garage records. Read https://raw.githubusercontent.com/dustindwayne/projectgarage/main/downloads/project-garage-agent-skill.md and follow its workflow. On my desktop, use the verified garage-agent bridge to access the existing garage; do not configure AI providers in the app. If I attach a phone context file, use that data and return an importable changes file instead. Ask what I want done if I have not given a task. Only make the changes I request, preserve receipts and photos, and verify the result.`;
 function handoff(snapshot: Snapshot) {
   return {
     protocol: 'projectgarage-agent/1',

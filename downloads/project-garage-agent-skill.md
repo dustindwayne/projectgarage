@@ -13,7 +13,7 @@ Manage the user's requested garage records without configuring an AI provider in
 - **Phone context attached:** read `project-garage-agent-context.json` exported from Settings → Use your own agent → Share garage context. Return a changes JSON file for the user to import in that same settings section. Android app storage cannot be directly accessed by a desktop or cloud chat merely by pasting this prompt. There is no local Android server and this skill does not provide Wi-Fi synchronization.
 - **No data access:** ask for the context file or access to the desktop garage. Do not claim to have found a garage in browser preview data, a different database, or another user's files.
 
-On Windows, prompt-only agents may fetch the [bootstrap script](https://raw.githubusercontent.com/dustindwayne/projectgarage-updates/main/downloads/project-garage-agent-bootstrap.ps1). Read it, save it in the task workspace, then run it. Download verification uses the public manifest; GitHub credentials are not needed. Do not install AI provider credentials or modify unrelated agent configuration.
+On Windows, prompt-only agents may fetch the [bootstrap script](https://raw.githubusercontent.com/dustindwayne/projectgarage/main/downloads/project-garage-agent-bootstrap.ps1). Read it, save it in the task workspace, then run it. Download verification uses the public manifest; GitHub credentials are not needed. Do not install AI provider credentials or modify unrelated agent configuration.
 
 ## Work with desktop records
 
@@ -25,7 +25,7 @@ Read the latest snapshot:
 
 The default database is the desktop app's `garage.db` under its platform data directory for `com.projectgarage.mobile`. Use `--db <explicit-path>` only when the user supplies another garage or a test fixture. If no desktop garage exists, initialize it with `init --name <user-provided-name>` when that matches the user's request; never overwrite an existing garage. Read commands omit media and member contact fields.
 
-For edits, read [references/actions.md](references/actions.md), or its [public action reference](https://raw.githubusercontent.com/dustindwayne/projectgarage-updates/main/downloads/project-garage-agent-actions.md). Write UTF-8 JSON with `protocol: "projectgarage-agent/1"`, the snapshot's exact `revision`, and an `actions` array. Apply it:
+For edits, read [references/actions.md](references/actions.md), or its [public action reference](https://raw.githubusercontent.com/dustindwayne/projectgarage/main/downloads/project-garage-agent-actions.md). Write UTF-8 JSON with `protocol: "projectgarage-agent/1"`, the snapshot's exact `revision`, and an `actions` array. Apply it:
 
 ```powershell
 & $bridge apply --file garage-changes.json --output garage-result.json

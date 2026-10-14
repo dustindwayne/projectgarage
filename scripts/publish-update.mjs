@@ -39,7 +39,7 @@ writeFileSync(
     {
       version,
       notes:
-        'Mobile design polish: consistent padding, clearer form labels, comfortable record controls, improved dialogs and readable backup/receipt flows.',
+        'Updates, installers, and agent downloads now use the public dustindwayne/projectgarage repository. No GitHub account or token is needed.',
       platforms,
       tools,
     },

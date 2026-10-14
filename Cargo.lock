@@ -2756,7 +2756,7 @@ dependencies = [
 
 [[package]]
 name = "project-garage"
-version = "0.5.2"
+version = "0.5.3"
 dependencies = [
  "aes-gcm",
  "garage-core",

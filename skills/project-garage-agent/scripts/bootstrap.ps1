@@ -1,9 +1,9 @@
 param([string]$OutputDirectory = (Join-Path (Get-Location).Path '.project-garage-agent'))
 $ErrorActionPreference='Stop'
-$taskReference=Invoke-RestMethod -Uri 'https://api.github.com/repos/dustindwayne/projectgarage-updates/git/ref/heads/main'
+$taskReference=Invoke-RestMethod -Uri 'https://api.github.com/repos/dustindwayne/projectgarage/git/ref/heads/main'
 $taskCommit=$taskReference.object.sha
 if($taskCommit -notmatch '^[0-9a-f]{40}$'){throw 'Could not resolve the published bridge version'}
-$taskBase="https://raw.githubusercontent.com/dustindwayne/projectgarage-updates/$taskCommit/downloads"
+$taskBase="https://raw.githubusercontent.com/dustindwayne/projectgarage/$taskCommit/downloads"
 $taskManifest=Invoke-RestMethod -Uri "$taskBase/latest.json"
 $taskPackage=$taskManifest.tools.agent_bridge
 if($taskPackage.path -ne 'downloads/project-garage-agent.exe' -or $taskPackage.sha256 -notmatch '^[0-9a-fA-F]{64}$' -or $taskPackage.size -lt 1 -or $taskPackage.size -gt 50000000){throw 'Invalid bridge manifest'}

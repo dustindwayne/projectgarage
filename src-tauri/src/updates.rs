@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{collections::HashMap, sync::Mutex, time::Duration};
 use tauri::Manager;
-const BASE: &str = "https://raw.githubusercontent.com/dustindwayne/projectgarage-updates/main";
+const BASE: &str = "https://raw.githubusercontent.com/dustindwayne/projectgarage/main";
 const LIMIT: u64 = 100_000_000;
 #[derive(Clone, Deserialize, Serialize)]
 pub struct Package {

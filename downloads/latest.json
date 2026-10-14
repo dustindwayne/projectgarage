@@ -1,15 +1,15 @@
 {
-  "version": "0.5.2",
-  "notes": "Mobile design polish: consistent padding, clearer form labels, comfortable record controls, improved dialogs and readable backup/receipt flows.",
+  "version": "0.5.3",
+  "notes": "Updates, installers, and agent downloads now use the public dustindwayne/projectgarage repository. No GitHub account or token is needed.",
   "platforms": {
     "android-aarch64": {
       "path": "downloads/project-garage-arm64-debug.apk",
-      "sha256": "f3bd3b86a6b37d5cdc3d14407b8ba1a1f5b2ad81f7c1bfba603107540d7be0ee",
+      "sha256": "62ededd0d431b9b01143435632b37c304963b797a1aeb0649dd51933b516d885",
       "size": 43467297
     },
     "windows-x86_64": {
       "path": "downloads/project-garage-windows.exe",
-      "sha256": "606ee1a9187b2736fd9fab29e5764c5e0409de34cd720ed45f9f51dcfc123ad2",
+      "sha256": "e3a97c5b8678f3edf6f1714bb64c9a860a05497174dcd5796bfd0fd50efd0f70",
       "size": 28657664
     }
   },
